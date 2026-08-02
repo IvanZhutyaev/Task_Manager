@@ -94,7 +94,7 @@ public interface TaskRepository extends JpaRepository<Task, Long> {
               AND (:status IS NULL OR t.status = :status)
               AND (:taskType IS NULL OR t.taskType = :taskType)
               AND (:label IS NULL OR :label MEMBER OF t.labels)
-              AND (:q IS NULL OR LOWER(t.title) LIKE LOWER(CONCAT('%', :q, '%')))
+              AND (:q = '' OR LOWER(t.title) LIKE LOWER(CONCAT('%', :q, '%')))
             """)
     Page<Task> findFilteredPageable(
             @Param("column") BoardColumn column,
@@ -115,7 +115,7 @@ public interface TaskRepository extends JpaRepository<Task, Long> {
               AND (:status IS NULL OR t.status = :status)
               AND (:taskType IS NULL OR t.taskType = :taskType)
               AND (:label IS NULL OR :label MEMBER OF t.labels)
-              AND (:q IS NULL OR LOWER(t.title) LIKE LOWER(CONCAT('%', :q, '%'))
+              AND (:q = '' OR LOWER(t.title) LIKE LOWER(CONCAT('%', :q, '%'))
                    OR LOWER(COALESCE(t.description, '')) LIKE LOWER(CONCAT('%', :q, '%')))
             """)
     Page<Task> findInProject(

@@ -81,7 +81,8 @@ public class TaskQueryService {
                 status,
                 taskType,
                 resolveLabel(labelId, project),
-                StringUtils.hasText(q) ? q.trim() : null,
+                // Empty string (not null): PostgreSQL binds null String as bytea and breaks LOWER(:q).
+                StringUtils.hasText(q) ? q.trim() : "",
                 pageable(page, size, sortBy, sortDir));
         return toPage(taskPage);
     }
@@ -110,7 +111,7 @@ public class TaskQueryService {
                 status,
                 taskType,
                 resolveLabel(labelId, project),
-                StringUtils.hasText(q) ? q.trim() : null,
+                StringUtils.hasText(q) ? q.trim() : "",
                 pageable(page, size, sortBy, sortDir));
         return toPage(taskPage);
     }
