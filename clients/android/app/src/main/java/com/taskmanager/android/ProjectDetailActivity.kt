@@ -63,12 +63,14 @@ class ProjectDetailActivity : AppCompatActivity() {
             try {
                 val projects = api.listProjects()
                 val project = projects.find { it.id == projectId }
-                binding.projectTitle.text = project?.name ?: "Проект #$projectId"
-                binding.projectMeta.text = buildString {
-                    append(project?.description?.ifBlank { null } ?: "Без описания")
-                    append(" · роль ")
-                    append(project?.currentUserRole ?: "—")
-                    if (project?.organizationId != null) append(" · org #${project.organizationId}")
+                binding.projectTitle.text = project?.name ?: "Проект"
+                val roleLabel = L10n.role(project?.currentUserRole)
+                val description = project?.description?.takeIf { it.isNotBlank() }
+                binding.projectMeta.text = when {
+                    description != null && roleLabel.isNotBlank() -> "$description · $roleLabel"
+                    description != null -> description
+                    roleLabel.isNotBlank() -> roleLabel
+                    else -> "Без описания"
                 }
 
                 val boards = api.listBoards(projectId)

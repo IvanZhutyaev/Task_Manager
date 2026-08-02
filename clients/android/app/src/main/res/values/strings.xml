@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">Task Manager</string>
-    <string name="api_hint">Эмулятор: http://10.0.2.2:8080/api/v1</string>
     <string name="tab_projects">Проекты</string>
     <string name="tab_organizations">Организации</string>
     <string name="login">Войти</string>
@@ -22,5 +21,7 @@
     <string name="empty_members">Участников пока нет</string>
     <string name="empty_teams">Команд пока нет</string>
     <string name="empty_boards">Досок пока нет</string>
-    <string name="how_orgs_work">1. Создайте организацию\n2. Добавьте людей по email\n3. Создайте команды и распределите участников\n4. Привязывайте проекты к организации</string>
+    <string name="how_orgs_work">Создайте организацию, добавьте участников и команды для совместной работы.</string>
+    <string name="api_url_title">Адрес API</string>
+    <string name="api_url_hint">http://10.0.2.2:8080/api/v1</string>
 </resources>

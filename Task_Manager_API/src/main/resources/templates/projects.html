@@ -14,12 +14,10 @@
             <span class="brand-mark">TM</span>
             <div>
                 <strong>Task Manager</strong>
-                <small>Demo UI</small>
             </div>
         </a>
         <div class="d-flex gap-2 align-items-center">
             <span id="userLabel" class="small"></span>
-            <a class="btn btn-outline-light btn-sm" href="/swagger-ui.html" target="_blank">Swagger</a>
             <button class="btn btn-light btn-sm" onclick="logout()">Выйти</button>
         </div>
     </div>
@@ -58,9 +56,9 @@
                                 <div class="col-md-3">
                                     <label class="form-label small" for="orgMemberRole">Роль</label>
                                     <select class="form-select form-select-sm" id="orgMemberRole">
-                                        <option value="MEMBER">MEMBER</option>
-                                        <option value="ADMIN">ADMIN</option>
-                                        <option value="VIEWER">VIEWER</option>
+                                        <option value="MEMBER">Участник</option>
+                                        <option value="ADMIN">Администратор</option>
+                                        <option value="VIEWER">Наблюдатель</option>
                                     </select>
                                 </div>
                                 <div class="col-md-3">
@@ -126,8 +124,8 @@
                     <div class="mb-0">
                         <label class="form-label" for="orgType">Тип</label>
                         <select class="form-select" id="orgType">
-                            <option value="LOCAL">LOCAL</option>
-                            <option value="COMMERCIAL">COMMERCIAL</option>
+                            <option value="LOCAL">Локальная</option>
+                            <option value="COMMERCIAL">Коммерческая</option>
                         </select>
                     </div>
                 </div>
@@ -166,10 +164,6 @@
                         <input class="form-check-input" type="checkbox" id="withDefaultBoard" checked>
                         <label class="form-check-label" for="withDefaultBoard">Создать доску Todo / Doing / Done</label>
                     </div>
-                    <div class="form-check">
-                        <input class="form-check-input" type="checkbox" id="strictBusinessRules">
-                        <label class="form-check-label" for="strictBusinessRules">Строгие правила</label>
-                    </div>
                 </div>
                 <div class="modal-footer">
                     <button type="submit" class="btn btn-primary">Создать</button>
@@ -182,6 +176,12 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script src="/js/api.js"></script>
 <script>
+    const LABELS = {
+        role: { OWNER: 'Владелец', EDITOR: 'Редактор', VIEWER: 'Наблюдатель', ADMIN: 'Администратор', MEMBER: 'Участник' },
+        orgType: { LOCAL: 'Локальная', COMMERCIAL: 'Коммерческая' }
+    };
+    function label(map, key) { return (map && key && map[key]) || key || '—'; }
+
     let organizations = [];
     let selectedOrgId = null;
 
@@ -216,9 +216,9 @@
                 <div class="org-item ${o.id === selectedOrgId ? 'active' : ''}" onclick="openOrganization(${o.id})">
                     <div class="d-flex justify-content-between gap-2">
                         <strong>${escapeHtml(o.name)}</strong>
-                        <span class="badge badge-role">${escapeHtml(o.currentUserRole || '—')}</span>
+                        <span class="badge badge-role">${escapeHtml(label(LABELS.role, o.currentUserRole))}</span>
                     </div>
-                    <div class="small text-muted">${escapeHtml(o.type)}</div>
+                    <div class="small text-muted">${escapeHtml(label(LABELS.orgType, o.type))}</div>
                 </div>`).join('');
             if (selectedOrgId) await openOrganization(selectedOrgId);
         } catch (err) {
@@ -234,7 +234,7 @@
         document.getElementById('orgDetail').classList.remove('d-none');
         document.getElementById('orgTitle').textContent = org.name;
         document.getElementById('orgMeta').textContent =
-            `${org.type} · ваша роль ${org.currentUserRole || '—'} · лимиты ${org.maxMembers ?? '—'}/${org.maxTeams ?? '—'}`;
+            `${label(LABELS.orgType, org.type)} · ваша роль ${label(LABELS.role, org.currentUserRole)}`;
         document.querySelectorAll('.org-item').forEach((n, i) => {
             n.classList.toggle('active', organizations[i]?.id === orgId);
         });
@@ -248,7 +248,7 @@
             ? members.map(m => `
                 <div class="person-row d-flex justify-content-between gap-2">
                     <span><strong>${escapeHtml(m.name || m.email)}</strong><br><span class="small text-muted">${escapeHtml(m.email)}</span></span>
-                    <span class="badge badge-role align-self-start">${escapeHtml(m.role)}</span>
+                    <span class="badge badge-role align-self-start">${escapeHtml(label(LABELS.role, m.role))}</span>
                 </div>`).join('')
             : '<div class="text-muted small">Участников пока нет</div>';
 
@@ -259,7 +259,7 @@
             catch (_) {}
             teamsHtml.push(`
                 <div class="team-card">
-                    <div class="fw-semibold mb-2">${escapeHtml(team.name)} <span class="badge badge-role">#${team.id}</span></div>
+                    <div class="fw-semibold mb-2">${escapeHtml(team.name)}</div>
                     <form class="row g-2 align-items-end mb-2" onsubmit="return addTeamMember(event, ${orgId}, ${team.id})">
                         <div class="col-8">
                             <input type="email" class="form-control form-control-sm" name="email" required placeholder="email участника org">
@@ -361,7 +361,7 @@
             }
             container.innerHTML = projects.map(p => {
                 const orgName = p.organizationId
-                    ? (organizations.find(o => o.id === p.organizationId)?.name || `org #${p.organizationId}`)
+                    ? (organizations.find(o => o.id === p.organizationId)?.name || 'Организация')
                     : 'Личный';
                 return `
                 <div class="col-md-6 col-xl-4">
@@ -369,7 +369,7 @@
                         <div class="card-body">
                             <h5 class="card-title">${escapeHtml(p.name)}</h5>
                             <p class="card-text text-muted">${escapeHtml(p.description || 'Без описания')}</p>
-                            <span class="badge badge-role me-1">${escapeHtml(p.currentUserRole || '')}</span>
+                            <span class="badge badge-role me-1">${escapeHtml(label(LABELS.role, p.currentUserRole))}</span>
                             <span class="badge text-bg-light">${escapeHtml(orgName)}</span>
                         </div>
                         <div class="card-footer pt-0 pb-3 px-3 border-0">
@@ -412,7 +412,7 @@
             }
             el.innerHTML = `<ul class="list-group list-group-flush">${pending.map(inv => `
                 <li class="list-group-item py-2 small d-flex justify-content-between align-items-center gap-2">
-                    <span>${escapeHtml(inv.projectName || '')} → ${inv.role}</span>
+                    <span>${escapeHtml(inv.projectName || '')} → ${escapeHtml(label(LABELS.role, inv.role))}</span>
                     <span class="btn-group btn-group-sm">
                         <button class="btn btn-outline-success" onclick="respondInvite(${inv.id}, true)">Принять</button>
                         <button class="btn btn-outline-secondary" onclick="respondInvite(${inv.id}, false)">Отклонить</button>
@@ -441,8 +441,7 @@
             const body = {
                 name: document.getElementById('projectName').value,
                 description: document.getElementById('projectDescription').value,
-                withDefaultBoard: document.getElementById('withDefaultBoard').checked,
-                strictBusinessRules: document.getElementById('strictBusinessRules').checked
+                withDefaultBoard: document.getElementById('withDefaultBoard').checked
             };
             if (orgRaw) body.organizationId = Number(orgRaw);
             await apiFetch('/api/projects', { method: 'POST', body: JSON.stringify(body) });

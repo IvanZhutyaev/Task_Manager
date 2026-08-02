@@ -14,7 +14,6 @@
             <span class="brand-mark">TM</span>
             <div>
                 <strong>Task Manager</strong>
-                <small>Demo UI</small>
             </div>
         </a>
         <button class="btn btn-light btn-sm" onclick="logout()">Выйти</button>
@@ -36,10 +35,10 @@
                 <label class="form-label small mb-1" for="projectSearchStatus">Статус</label>
                 <select class="form-select" id="projectSearchStatus">
                     <option value="">Все</option>
-                    <option value="BACKLOG">BACKLOG</option>
-                    <option value="IN_PROGRESS">IN_PROGRESS</option>
-                    <option value="DONE">DONE</option>
-                    <option value="ARCHIVED">ARCHIVED</option>
+                    <option value="BACKLOG">Бэклог</option>
+                    <option value="IN_PROGRESS">В работе</option>
+                    <option value="DONE">Готово</option>
+                    <option value="ARCHIVED">Архив</option>
                 </select>
             </div>
             <div class="col-md-3">
@@ -74,8 +73,8 @@
                         <div class="col-md-3">
                             <label class="form-label" for="inviteRole">Роль</label>
                             <select class="form-select" id="inviteRole">
-                                <option value="EDITOR">EDITOR</option>
-                                <option value="VIEWER">VIEWER</option>
+                                <option value="EDITOR">Редактор</option>
+                                <option value="VIEWER">Наблюдатель</option>
                             </select>
                         </div>
                         <div class="col-md-4">
@@ -83,26 +82,6 @@
                         </div>
                     </form>
                     <div id="pendingInvites" class="mb-3"></div>
-
-                    <details>
-                        <summary class="small text-muted">Добавить по userId (legacy)</summary>
-                        <form id="addMemberForm" class="row g-2 align-items-end mt-2">
-                            <div class="col-md-4">
-                                <label class="form-label" for="memberUserId">ID пользователя</label>
-                                <input type="number" class="form-control" id="memberUserId" required>
-                            </div>
-                            <div class="col-md-3">
-                                <label class="form-label" for="memberRole">Роль</label>
-                                <select class="form-select" id="memberRole">
-                                    <option value="EDITOR">EDITOR</option>
-                                    <option value="VIEWER">VIEWER</option>
-                                </select>
-                            </div>
-                            <div class="col-md-3">
-                                <button type="submit" class="btn btn-outline-secondary" id="addMemberBtn">Добавить</button>
-                            </div>
-                        </form>
-                    </details>
                 </div>
             </div>
         </div>
@@ -169,14 +148,14 @@
                     <div class="mb-3">
                         <label class="form-label" for="boardAccessMode">Доступ</label>
                         <select class="form-select" id="boardAccessMode">
-                            <option value="OPEN" selected>OPEN</option>
-                            <option value="PRIVATE">PRIVATE</option>
-                            <option value="TEAM_ACL">TEAM_ACL</option>
+                            <option value="OPEN" selected>Открытый</option>
+                            <option value="PRIVATE">Приватный</option>
+                            <option value="TEAM_ACL">По команде</option>
                         </select>
-                        <div class="form-text">TEAM_ACL доступен только для org-проектов (owner/admin).</div>
+                        <div class="form-text">Режим «По команде» доступен только для org-проектов (владелец/администратор).</div>
                     </div>
                     <div class="mb-3">
-                        <label class="form-label" for="boardTeamId">Команда (для TEAM_ACL)</label>
+                        <label class="form-label" for="boardTeamId">Команда (для режима «По команде»)</label>
                         <select class="form-select" id="boardTeamId">
                             <option value="">— выберите команду —</option>
                         </select>
@@ -194,6 +173,14 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script src="/js/api.js"></script>
 <script>
+    const LABELS = {
+        role: { OWNER: 'Владелец', EDITOR: 'Редактор', VIEWER: 'Наблюдатель', ADMIN: 'Администратор', MEMBER: 'Участник' },
+        status: { BACKLOG: 'Бэклог', IN_PROGRESS: 'В работе', DONE: 'Готово', ARCHIVED: 'Архив', PENDING: 'Ожидает', ACTIVE: 'Активный', CLOSED: 'Закрыт' },
+        priority: { LOW: 'Низкий', MEDIUM: 'Средний', HIGH: 'Высокий' },
+        accessMode: { OPEN: 'Открытый', PRIVATE: 'Приватный', TEAM_ACL: 'По команде' }
+    };
+    function label(map, key) { return (map && key && map[key]) || key || '—'; }
+
     const projectId = window.location.pathname.split('/').pop();
     let currentRole = null;
 
@@ -213,20 +200,9 @@
                     <h1 class="h3 mb-1">${escapeHtml(project.name)}</h1>
                     <p class="text-muted mb-2">${escapeHtml(project.description || 'Без описания')}</p>
                     <div class="d-flex flex-wrap gap-1 align-items-center">
-                        <span class="badge text-bg-primary">${project.currentUserRole}</span>
-                        <span class="badge ${project.strictBusinessRules ? 'text-bg-danger' : 'text-bg-success'}">
-                            ${project.strictBusinessRules ? 'STRICT' : 'LEGACY'}
-                        </span>
-                        ${project.capacityLimitHours != null ? `<span class="badge text-bg-info">capacity ${project.capacityLimitHours}h</span>` : ''}
-                        ${project.requireApprovalForDone ? '<span class="badge text-bg-warning">approval</span>' : ''}
-                        ${project.priorityQueueRules ? '<span class="badge text-bg-warning">priority-queue</span>' : ''}
-                        ${project.organizationId ? `<span class="badge text-bg-dark">org #${project.organizationId}</span>` : ''}
+                        <span class="badge text-bg-primary">${escapeHtml(label(LABELS.role, project.currentUserRole))}</span>
                         <span class="text-muted small">владелец: ${escapeHtml(project.ownerName || '')}</span>
                     </div>
-                </div>
-                <div class="d-flex flex-wrap gap-2">
-                    ${isOwner ? `<button class="btn btn-sm btn-outline-secondary" type="button" onclick="patchSettings()">Настройки+</button>` : ''}
-                    <a class="btn btn-sm btn-outline-secondary" href="/api/v1/projects/${projectId}/time-report?format=csv" target="_blank">Time CSV</a>
                 </div>
             `;
 
@@ -234,7 +210,6 @@
             await loadOrgTeamsForBoard(project.organizationId);
             document.getElementById('createBoardBtn').classList.toggle('d-none', !canWrite);
             document.getElementById('inviteForm').classList.toggle('d-none', !isOwner);
-            document.getElementById('addMemberForm').classList.toggle('d-none', !isOwner);
             document.getElementById('createLabelForm').classList.toggle('d-none', !canWrite);
             document.getElementById('createSprintForm').classList.toggle('d-none', !canWrite);
 
@@ -258,7 +233,7 @@
         try {
             const teams = await apiFetch(`/api/organizations/${organizationId}/teams`);
             select.innerHTML += (teams || []).map(t =>
-                `<option value="${t.id}">${escapeHtml(t.name)} (#${t.id})</option>`).join('');
+                `<option value="${t.id}">${escapeHtml(t.name)}</option>`).join('');
         } catch (_) { /* ignore */ }
     }
 
@@ -274,8 +249,7 @@
                 <div class="tm-card project-tile h-100">
                     <div class="card-body">
                         <h5 class="card-title">${escapeHtml(b.name)}</h5>
-                        <span class="badge text-bg-secondary mb-2">${escapeHtml(b.accessMode || 'OPEN')}</span>
-                        ${b.teamIds && b.teamIds.length ? `<div class="small text-muted mb-2">teams: ${b.teamIds.join(', ')}</div>` : ''}
+                        <span class="badge text-bg-secondary mb-2">${escapeHtml(label(LABELS.accessMode, b.accessMode || 'OPEN'))}</span>
                     </div>
                     <div class="card-footer pt-0 pb-3 px-3 border-0">
                         <a href="/boards/${b.id}" class="btn btn-sm btn-outline-primary">Открыть доску</a>
@@ -291,8 +265,8 @@
             <ul class="list-group">
                 ${members.map(m => `
                     <li class="list-group-item d-flex justify-content-between">
-                        <span>${escapeHtml(m.name)} (${escapeHtml(m.email)}) <span class="text-muted">id=${m.userId}</span></span>
-                        <span class="badge text-bg-secondary">${m.role}</span>
+                        <span>${escapeHtml(m.name)} (${escapeHtml(m.email)})</span>
+                        <span class="badge text-bg-secondary">${escapeHtml(label(LABELS.role, m.role))}</span>
                     </li>
                 `).join('')}
             </ul>
@@ -315,8 +289,8 @@
             el.innerHTML = `<div class="small mb-1 text-muted">Ожидают ответа:</div>
                 <ul class="list-group list-group-flush">${pending.map(i => `
                     <li class="list-group-item px-0 py-1 d-flex justify-content-between">
-                        <span>${escapeHtml(i.email)} → ${i.role}</span>
-                        <span class="badge text-bg-warning">${i.status}</span>
+                        <span>${escapeHtml(i.email)} → ${escapeHtml(label(LABELS.role, i.role))}</span>
+                        <span class="badge text-bg-warning">${escapeHtml(label(LABELS.status, i.status))}</span>
                     </li>
                 `).join('')}</ul>`;
         } catch (err) {
@@ -337,7 +311,7 @@
         document.getElementById('sprintsList').innerHTML = sprints.length
             ? `<ul class="list-group mb-2">${sprints.map(s => `
                 <li class="list-group-item d-flex justify-content-between align-items-center">
-                    <span>${escapeHtml(s.name)} <span class="badge text-bg-secondary">${s.status}</span></span>
+                    <span>${escapeHtml(s.name)} <span class="badge text-bg-secondary">${escapeHtml(label(LABELS.status, s.status))}</span></span>
                     ${canWrite && s.status === 'ACTIVE' ? `<button class="btn btn-sm btn-outline-warning" onclick="closeSprint(${s.id})">Закрыть</button>` : ''}
                 </li>`).join('')}</ul>`
             : '<div class="text-muted small">Спринтов пока нет</div>';
@@ -373,10 +347,10 @@
             }
             el.innerHTML = `<div class="list-group mb-2">${tasks.map(t => `
                 <div class="list-group-item">
-                    <div class="fw-semibold">#${t.id} ${escapeHtml(t.title)}
-                        ${t.overdue ? '<span class="badge text-bg-danger">OVERDUE</span>' : ''}
+                    <div class="fw-semibold">${escapeHtml(t.title)}
+                        ${t.overdue ? '<span class="badge text-bg-danger">Просрочена</span>' : ''}
                     </div>
-                    <div class="small text-muted">col=${t.columnId} · ${t.status} · ${t.priority}
+                    <div class="small text-muted">${escapeHtml(label(LABELS.status, t.status))} · ${escapeHtml(label(LABELS.priority, t.priority))}
                         ${t.assigneeName ? ' · ' + escapeHtml(t.assigneeName) : ''}
                     </div>
                 </div>
@@ -395,22 +369,6 @@
             });
             loadSprints();
             loadActivity();
-        } catch (err) {
-            showAlert('alert', err.message);
-        }
-    }
-
-    async function patchSettings() {
-        const capacity = prompt('Capacity limit hours (пусто = не менять)', '');
-        const body = { priorityQueueRules: true, requireApprovalForDone: true };
-        if (capacity !== null && capacity !== '') body.capacityLimitHours = Number(capacity);
-        try {
-            await apiFetch(`/api/projects/${projectId}/settings`, {
-                method: 'PATCH',
-                body: JSON.stringify(body)
-            });
-            showAlert('alert', 'Настройки обновлены (priority-queue + approval + capacity)', 'success');
-            loadProject();
         } catch (err) {
             showAlert('alert', err.message);
         }
@@ -453,23 +411,6 @@
             document.getElementById('inviteForm').reset();
             loadPendingInvites();
             showAlert('alert', 'Приглашение отправлено', 'success');
-        } catch (err) {
-            showAlert('alert', err.message);
-        }
-    });
-
-    document.getElementById('addMemberForm').addEventListener('submit', async (e) => {
-        e.preventDefault();
-        try {
-            await apiFetch(`/api/projects/${projectId}/members`, {
-                method: 'POST',
-                body: JSON.stringify({
-                    userId: Number(document.getElementById('memberUserId').value),
-                    role: document.getElementById('memberRole').value
-                })
-            });
-            document.getElementById('addMemberForm').reset();
-            loadMembers();
         } catch (err) {
             showAlert('alert', err.message);
         }

@@ -58,7 +58,7 @@ async function apiFetch(path, options = {}) {
     }
 
     if (!response.ok) {
-        let message = 'Request failed';
+        let message = 'Ошибка запроса';
         try {
             const error = await response.json();
             message = error.message || message;

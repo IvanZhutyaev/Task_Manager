@@ -26,7 +26,6 @@ class AuthActivity : AppCompatActivity() {
         binding = ActivityAuthBinding.inflate(layoutInflater)
         setContentView(binding.root)
         api = ApiClient(baseUrl = session.baseUrl)
-        binding.baseUrlInput.setText(session.baseUrl)
 
         binding.authToggle.addOnButtonCheckedListener { _, checkedId, isChecked ->
             if (!isChecked) return@addOnButtonCheckedListener
@@ -37,13 +36,23 @@ class AuthActivity : AppCompatActivity() {
         }
 
         binding.submitBtn.setOnClickListener { submit() }
+
+        binding.brandLabel.setOnLongClickListener {
+            askText(
+                title = getString(R.string.api_url_title),
+                hint = getString(R.string.api_url_hint),
+                message = session.baseUrl
+            ) { url ->
+                session.baseUrl = url
+                api.baseUrl = url
+                toast("API: $url")
+            }
+            true
+        }
     }
 
     private fun submit() {
-        val base = binding.baseUrlInput.text?.toString()?.trim().orEmpty()
-            .ifBlank { ApiConfig.DEFAULT_BASE_URL }
-        session.baseUrl = base
-        api.baseUrl = base
+        api.baseUrl = session.baseUrl
 
         val email = binding.emailInput.text?.toString()?.trim().orEmpty()
         val password = binding.passwordInput.text?.toString().orEmpty()

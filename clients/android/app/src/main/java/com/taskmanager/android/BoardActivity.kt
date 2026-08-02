@@ -39,7 +39,10 @@ class BoardActivity : AppCompatActivity() {
         api = ApiClient(baseUrl = session.baseUrl, token = session.token)
 
         binding.boardTitle.text = intent.getStringExtra(EXTRA_BOARD_NAME) ?: "Доска"
-        binding.boardMeta.text = "Доступ: ${intent.getStringExtra(EXTRA_ACCESS_MODE) ?: "OPEN"}"
+        val accessMode = intent.getStringExtra(EXTRA_ACCESS_MODE)
+        val accessHeader = L10n.boardAccessHeader(accessMode)
+        binding.boardMeta.text = accessHeader.orEmpty()
+        binding.boardMeta.visibility = if (accessHeader.isNullOrBlank()) View.GONE else View.VISIBLE
 
         binding.backBtn.setOnClickListener { finish() }
         binding.newColumnBtn.setOnClickListener { createColumn() }
@@ -62,7 +65,7 @@ class BoardActivity : AppCompatActivity() {
                 for (column in columns) {
                     val colBinding = ItemColumnBinding.inflate(inflater, binding.columnsContainer, false)
                     colBinding.columnTitle.text = column.name
-                    val taskAdapter = TaskAdapter()
+                    val taskAdapter = TaskAdapter(column.mappedStatus)
                     colBinding.tasksList.layoutManager = LinearLayoutManager(this@BoardActivity)
                     colBinding.tasksList.adapter = taskAdapter
                     val tasks = api.listTasks(column.id)

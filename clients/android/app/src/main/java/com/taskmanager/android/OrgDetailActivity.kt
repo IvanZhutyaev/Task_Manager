@@ -55,8 +55,10 @@ class OrgDetailActivity : AppCompatActivity() {
             try {
                 val orgs = api.listOrganizations()
                 val org = orgs.find { it.id == orgId } ?: api.listOrganizations().find { it.id == orgId }
-                binding.orgTitle.text = org?.name ?: "Организация #$orgId"
-                binding.orgMeta.text = "${org?.type ?: ""} · ваша роль ${org?.currentUserRole ?: "—"}"
+                binding.orgTitle.text = org?.name ?: "Организация"
+                val roleLabel = L10n.role(org?.currentUserRole)
+                binding.orgMeta.text = if (roleLabel.isNotBlank()) "Ваша роль: $roleLabel" else ""
+                binding.orgMeta.visibility = if (roleLabel.isNotBlank()) View.VISIBLE else View.GONE
 
                 val members = api.listOrgMembers(orgId)
                 membersAdapter.submit(members.map {
@@ -80,8 +82,7 @@ class OrgDetailActivity : AppCompatActivity() {
     }
 
     private fun addOrgMember() {
-        val roles = arrayOf("MEMBER", "ADMIN", "VIEWER")
-        var role = "MEMBER"
+        var roleIndex = 0
         val input = android.widget.EditText(this).apply {
             hint = "email@example.com"
             setPadding(48, 36, 48, 36)
@@ -90,10 +91,13 @@ class OrgDetailActivity : AppCompatActivity() {
             .setTitle("Добавить участника организации")
             .setMessage("Человек должен уже иметь аккаунт Task Manager.")
             .setView(input)
-            .setSingleChoiceItems(roles, 0) { _, which -> role = roles[which] }
+            .setSingleChoiceItems(L10n.orgMemberRoleLabels.toTypedArray(), 0) { _, which ->
+                roleIndex = which
+            }
             .setPositiveButton("Добавить") { _, _ ->
                 val email = input.text.toString().trim()
                 if (email.isBlank()) return@setPositiveButton
+                val role = L10n.orgMemberRoleValues[roleIndex]
                 lifecycleScope.launch {
                     try {
                         api.addOrgMember(orgId, email, role)

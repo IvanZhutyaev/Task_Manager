@@ -103,13 +103,15 @@ class HomeActivity : AppCompatActivity() {
                 projects = api.listProjects()
                 adapter.submit(projects.map { p ->
                     val org = p.organizationId?.let { id ->
-                        organizations.find { it.id == id }?.name ?: "Организация #$id"
-                    } ?: "Личный проект"
+                        organizations.find { it.id == id }?.name
+                    }
+                    val subtitle = p.description?.takeIf { it.isNotBlank() }
+                        ?: org ?: "Личный проект"
                     EntityItem(
                         id = p.id,
                         title = p.name,
-                        subtitle = p.description?.ifBlank { null } ?: "Без описания",
-                        badge = "${p.currentUserRole ?: "ROLE"} · $org"
+                        subtitle = subtitle,
+                        badge = L10n.role(p.currentUserRole)
                     )
                 })
                 binding.emptyState.visibility = if (projects.isEmpty()) View.VISIBLE else View.GONE
@@ -129,8 +131,8 @@ class HomeActivity : AppCompatActivity() {
                     EntityItem(
                         id = o.id,
                         title = o.name,
-                        subtitle = "Тип ${o.type} · лимит ${o.maxMembers ?: "—"} участников",
-                        badge = "Роль: ${o.currentUserRole ?: "—"}"
+                        subtitle = "",
+                        badge = L10n.role(o.currentUserRole)
                     )
                 })
                 binding.emptyState.visibility = if (organizations.isEmpty()) View.VISIBLE else View.GONE

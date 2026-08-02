@@ -1,5 +1,38 @@
 const TOKEN_KEY = 'tm.web.token';
-const API_KEY = 'tm.web.apiBase';
+const DEFAULT_API = 'http://localhost:8080/api/v1';
+
+const LABELS = {
+  role: {
+    OWNER: 'Владелец', EDITOR: 'Редактор', VIEWER: 'Наблюдатель', CONTRACTOR: 'Подрядчик',
+    MEMBER: 'Участник', ADMIN: 'Админ',
+  },
+  status: {
+    BACKLOG: 'Бэклог', IN_PROGRESS: 'В работе', DONE: 'Готово', ARCHIVED: 'Архив',
+    ACTIVE: 'Активен', CLOSED: 'Закрыт', PENDING: 'Ожидает',
+  },
+  priority: { LOW: 'Низкий', MEDIUM: 'Средний', HIGH: 'Высокий' },
+  access: { OPEN: 'Открытая', PRIVATE: 'Закрытая', TEAM_ACL: 'Только команда' },
+  orgType: { LOCAL: 'Локальная', COMMERCIAL: 'Коммерческая' },
+  taskType: { BUG: 'Баг', FEATURE: 'Фича', CHORE: 'Задача' },
+};
+
+const label = (map, value, fallback = value || '—') => (value && map[value]) || fallback;
+
+const ROLE_OPTS = [
+  { value: 'EDITOR', label: LABELS.role.EDITOR },
+  { value: 'VIEWER', label: LABELS.role.VIEWER },
+  { value: 'CONTRACTOR', label: LABELS.role.CONTRACTOR },
+];
+const PRIORITY_OPTS = Object.entries(LABELS.priority).map(([value, label]) => ({ value, label }));
+const STATUS_OPTS = Object.entries(LABELS.status)
+  .filter(([k]) => ['BACKLOG', 'IN_PROGRESS', 'DONE', 'ARCHIVED'].includes(k))
+  .map(([value, label]) => ({ value, label }));
+const ACCESS_OPTS = Object.entries(LABELS.access).map(([value, label]) => ({ value, label }));
+const ORG_TYPE_OPTS = Object.entries(LABELS.orgType).map(([value, label]) => ({ value, label }));
+const TASK_TYPE_OPTS = [
+  { value: '', label: '—' },
+  ...Object.entries(LABELS.taskType).map(([value, label]) => ({ value, label })),
+];
 
 const state = {
   token: localStorage.getItem(TOKEN_KEY),
@@ -30,7 +63,6 @@ const els = {
   loginForm: document.getElementById('loginForm'),
   registerForm: document.getElementById('registerForm'),
   authError: document.getElementById('authError'),
-  apiBase: document.getElementById('apiBase'),
   projectsView: document.getElementById('projectsView'),
   orgsView: document.getElementById('orgsView'),
   projectList: document.getElementById('projectList'),
@@ -42,6 +74,7 @@ const els = {
   boardsArea: document.getElementById('boardsArea'),
   projectSidePanel: document.getElementById('projectSidePanel'),
   searchResults: document.getElementById('searchResults'),
+  notifResults: document.getElementById('notifResults'),
   orgEmpty: document.getElementById('orgEmpty'),
   orgDetail: document.getElementById('orgDetail'),
   orgTitle: document.getElementById('orgTitle'),
@@ -66,12 +99,8 @@ const els = {
   modalError: document.getElementById('modalError'),
 };
 
-els.apiBase.value = localStorage.getItem(API_KEY) || 'http://localhost:8080/api/v1';
-
 function apiBase() {
-  const value = els.apiBase.value.replace(/\/$/, '');
-  localStorage.setItem(API_KEY, value);
-  return value;
+  return DEFAULT_API.replace(/\/$/, '');
 }
 
 function toast(message) {
@@ -97,7 +126,7 @@ async function api(path, options = {}) {
   }
   if (!res.ok) {
     if (res.status === 401) logout(false);
-    throw new Error(data?.message || `HTTP ${res.status}`);
+    throw new Error(data?.message || 'Не удалось выполнить запрос');
   }
   return data;
 }
@@ -194,7 +223,7 @@ els.logoutBtn.addEventListener('click', () => logout());
 
 function memberOptions(includeEmpty = true) {
   const opts = includeEmpty ? [{ value: '', label: 'Без исполнителя' }] : [];
-  state.members.forEach((m) => opts.push({ value: String(m.userId), label: `${m.name} (${m.email})` }));
+  state.members.forEach((m) => opts.push({ value: String(m.userId), label: m.name || m.email }));
   return opts;
 }
 
@@ -220,7 +249,7 @@ async function loadOrganizations() {
 function renderProjects() {
   els.projectList.innerHTML = '';
   if (!state.projects.length) {
-    els.projectList.innerHTML = '<li class="rail-hint" style="padding:0.5rem">Проектов пока нет</li>';
+    els.projectList.innerHTML = '<li class="rail-hint empty-rail">Проектов пока нет</li>';
     return;
   }
   state.projects.forEach((p) => {
@@ -229,9 +258,9 @@ function renderProjects() {
     btn.type = 'button';
     btn.className = p.id === state.selectedProjectId ? 'active' : '';
     const org = p.organizationId
-      ? (state.organizations.find((o) => o.id === p.organizationId)?.name || `org #${p.organizationId}`)
+      ? (state.organizations.find((o) => o.id === p.organizationId)?.name || 'Организация')
       : 'Личный';
-    btn.innerHTML = `<strong>${escapeHtml(p.name)}</strong><small>${escapeHtml(p.currentUserRole || '')} · ${escapeHtml(org)}</small>`;
+    btn.innerHTML = `<strong>${escapeHtml(p.name)}</strong><small>${escapeHtml(label(LABELS.role, p.currentUserRole))} · ${escapeHtml(org)}</small>`;
     btn.addEventListener('click', () => openProject(p.id));
     li.appendChild(btn);
     els.projectList.appendChild(li);
@@ -241,7 +270,7 @@ function renderProjects() {
 function renderOrganizations() {
   els.orgList.innerHTML = '';
   if (!state.organizations.length) {
-    els.orgList.innerHTML = '<li class="rail-hint" style="padding:0.5rem">Создайте первую организацию</li>';
+    els.orgList.innerHTML = '<li class="rail-hint empty-rail">Создайте организацию</li>';
     return;
   }
   state.organizations.forEach((o) => {
@@ -249,7 +278,7 @@ function renderOrganizations() {
     const btn = document.createElement('button');
     btn.type = 'button';
     btn.className = o.id === state.selectedOrgId ? 'active' : '';
-    btn.innerHTML = `<strong>${escapeHtml(o.name)}</strong><small>${escapeHtml(o.type)} · ваша роль: ${escapeHtml(o.currentUserRole || '—')}</small>`;
+    btn.innerHTML = `<strong>${escapeHtml(o.name)}</strong><small>${escapeHtml(label(LABELS.orgType, o.type))} · ${escapeHtml(label(LABELS.role, o.currentUserRole))}</small>`;
     btn.addEventListener('click', () => {
       setView('organizations');
       openOrganization(o.id);
@@ -267,7 +296,7 @@ async function openOrganization(orgId) {
   els.orgEmpty.hidden = true;
   els.orgDetail.hidden = false;
   els.orgTitle.textContent = state.selectedOrg.name;
-  els.orgMeta.textContent = `${state.selectedOrg.type} · роль ${state.selectedOrg.currentUserRole || '—'} · лимиты: ${state.selectedOrg.maxMembers ?? '—'} уч. / ${state.selectedOrg.maxTeams ?? '—'} команд`;
+  els.orgMeta.textContent = `${label(LABELS.orgType, state.selectedOrg.type)} · ${label(LABELS.role, state.selectedOrg.currentUserRole)}`;
 
   const [members, teams] = await Promise.all([
     api(`/organizations/${orgId}/members`),
@@ -292,14 +321,14 @@ function renderOrgMembers() {
     ? state.orgMembers.map((m) => `
       <li>
         <span><strong>${escapeHtml(m.name || m.email)}</strong><br><small>${escapeHtml(m.email)}</small></span>
-        <span class="role-pill">${escapeHtml(m.role)}</span>
+        <span class="role-pill">${escapeHtml(label(LABELS.role, m.role))}</span>
       </li>`).join('')
-    : '<li class="rail-hint">Пока никого нет — добавьте участника формой выше</li>';
+    : '<li class="rail-hint">Пока никого нет</li>';
 }
 
 function renderTeams() {
   if (!state.orgTeams.length) {
-    els.teamsArea.innerHTML = '<p class="rail-hint">Команд пока нет. Создайте первую формой выше — потом добавьте в неё людей.</p>';
+    els.teamsArea.innerHTML = '<p class="rail-hint">Создайте первую команду формой выше.</p>';
     return;
   }
   els.teamsArea.innerHTML = '';
@@ -308,14 +337,14 @@ function renderTeams() {
     card.className = 'team-card';
     const members = state.teamMembersById[team.id] || [];
     card.innerHTML = `
-      <h4>${escapeHtml(team.name)} <small class="role-pill">#${team.id}</small></h4>
+      <h4>${escapeHtml(team.name)}</h4>
       <form class="mini-form" data-team="${team.id}">
-        <input name="email" type="email" required placeholder="email участника организации" />
+        <input name="email" type="email" required placeholder="email участника" />
         <button class="btn small primary" type="submit">В команду</button>
       </form>
       <ul>${members.length
-        ? members.map((m) => `<li>${escapeHtml(m.name || m.email)} · ${escapeHtml(m.email || '')}</li>`).join('')
-        : '<li>В команде пока пусто</li>'}</ul>`;
+        ? members.map((m) => `<li>${escapeHtml(m.name || m.email)}</li>`).join('')
+        : '<li>Пока пусто</li>'}</ul>`;
     card.querySelector('form').addEventListener('submit', async (e) => {
       e.preventDefault();
       const email = new FormData(e.target).get('email');
@@ -324,7 +353,7 @@ function renderTeams() {
           method: 'POST',
           body: JSON.stringify({ email }),
         });
-        toast(`Добавлен в команду «${team.name}»`);
+        toast(`Добавлен в «${team.name}»`);
         e.target.reset();
         await openOrganization(state.selectedOrgId);
       } catch (err) { toast(err.message); }
@@ -342,7 +371,7 @@ els.addOrgMemberForm.addEventListener('submit', async (e) => {
       method: 'POST',
       body: JSON.stringify({ email: fd.get('email'), role: fd.get('role') || 'MEMBER' }),
     });
-    toast('Участник организации добавлен');
+    toast('Участник добавлен');
     e.target.reset();
     await openOrganization(state.selectedOrgId);
   } catch (err) { toast(err.message); }
@@ -373,10 +402,10 @@ async function loadMyInvitationsBanner() {
       return;
     }
     els.invitesBanner.hidden = false;
-    els.invitesBanner.innerHTML = `<strong>Входящие приглашения в проекты</strong>
-      <ul class="people-list" style="margin-top:0.6rem">${pending.map((inv) => `
+    els.invitesBanner.innerHTML = `<strong>Приглашения в проекты</strong>
+      <ul class="people-list invite-list">${pending.map((inv) => `
         <li>
-          <span>${escapeHtml(inv.projectName || `Проект #${inv.projectId}`)} → ${escapeHtml(inv.role)}</span>
+          <span>${escapeHtml(inv.projectName || 'Проект')} · ${escapeHtml(label(LABELS.role, inv.role))}</span>
           <span class="row">
             <button type="button" class="btn small primary" data-accept="${inv.id}">Принять</button>
             <button type="button" class="btn small ghost" data-decline="${inv.id}">Отклонить</button>
@@ -412,11 +441,15 @@ async function openProject(projectId) {
   renderProjects();
   els.emptyState.hidden = true;
   els.projectDetail.hidden = false;
+  els.searchResults.hidden = true;
+  els.notifResults.hidden = true;
   els.projectTitle.textContent = project.name;
   const orgName = project.organizationId
-    ? (state.organizations.find((o) => o.id === project.organizationId)?.name || `#${project.organizationId}`)
-    : 'личный проект';
-  els.projectMeta.textContent = `${project.description || 'Без описания'} · роль ${project.currentUserRole} · ${orgName}`;
+    ? (state.organizations.find((o) => o.id === project.organizationId)?.name || 'Организация')
+    : 'Личный проект';
+  const bits = [orgName, label(LABELS.role, project.currentUserRole)];
+  if (project.description) bits.unshift(project.description);
+  els.projectMeta.textContent = bits.join(' · ');
 
   state.members = await api(`/projects/${projectId}/members`);
   state.boards = await api(`/projects/${projectId}/boards`);
@@ -465,7 +498,7 @@ els.inviteMemberBtn.addEventListener('click', () => {
   if (!state.selectedProjectId) return;
   openModal('Пригласить в проект', [
     { name: 'email', label: 'Email', required: true },
-    { name: 'role', label: 'Роль', type: 'select', options: ['EDITOR', 'VIEWER', 'CONTRACTOR'], value: 'EDITOR' },
+    { name: 'role', label: 'Роль', type: 'select', options: ROLE_OPTS, value: 'EDITOR' },
   ], async (values) => {
     await api(`/projects/${state.selectedProjectId}/invitations`, {
       method: 'POST',
@@ -478,24 +511,26 @@ els.inviteMemberBtn.addEventListener('click', () => {
 
 els.runSearch.addEventListener('click', async () => {
   const q = els.projectSearch.value.trim();
+  els.notifResults.hidden = true;
   try {
     const page = await api(`/projects/${state.selectedProjectId}/tasks?q=${encodeURIComponent(q)}&size=50`);
     const items = page.content || [];
     els.searchResults.hidden = false;
     els.searchResults.innerHTML = items.length
-      ? `<strong>Найдено: ${items.length}</strong><ul class="people-list" style="margin-top:0.5rem">${items.map((t) =>
-        `<li><span>#${t.id} ${escapeHtml(t.title)}</span><span class="role-pill">${escapeHtml(t.status)}</span></li>`).join('')}</ul>`
+      ? `<strong>Найдено: ${items.length}</strong><ul class="people-list results-list">${items.map((t) =>
+        `<li><span>${escapeHtml(t.title)}</span><span class="role-pill">${escapeHtml(label(LABELS.status, t.status))}</span></li>`).join('')}</ul>`
       : 'Ничего не найдено';
   } catch (err) { toast(err.message); }
 });
 
 els.loadNotifs.addEventListener('click', async () => {
+  els.searchResults.hidden = true;
   try {
     const list = await api('/users/me/notifications');
-    els.searchResults.hidden = false;
-    els.searchResults.innerHTML = (list || []).length
-      ? `<strong>Уведомления</strong><ul class="people-list" style="margin-top:0.5rem">${(list || []).slice(0, 15).map((n) =>
-        `<li><span>${escapeHtml(n.message || n.type)}</span><span class="role-pill">${n.read ? 'read' : 'new'}</span></li>`).join('')}</ul>`
+    els.notifResults.hidden = false;
+    els.notifResults.innerHTML = (list || []).length
+      ? `<strong>Уведомления</strong><ul class="people-list results-list">${(list || []).slice(0, 15).map((n) =>
+        `<li><span>${escapeHtml(n.message || n.type)}</span><span class="role-pill">${n.read ? 'Прочитано' : 'Новое'}</span></li>`).join('')}</ul>`
       : 'Нет уведомлений';
   } catch (err) { toast(err.message); }
 });
@@ -509,30 +544,30 @@ async function renderProjectSidePanel() {
   const activity = activityPage.content || activityPage || [];
   els.projectSidePanel.innerHTML = `
     <section class="block">
-      <h3>Участники проекта</h3>
+      <h3>Участники</h3>
       <ul class="people-list">${state.members.map((m) =>
-        `<li><span>${escapeHtml(m.name)} · ${escapeHtml(m.email)}</span><span class="role-pill">${escapeHtml(m.role)}</span></li>`).join('') || '<li>нет</li>'}</ul>
+        `<li><span>${escapeHtml(m.name)}<br><small>${escapeHtml(m.email)}</small></span><span class="role-pill">${escapeHtml(label(LABELS.role, m.role))}</span></li>`).join('') || '<li>Нет участников</li>'}</ul>
     </section>
     <section class="block">
       <h3>Метки и спринты</h3>
-      <p>${(labels || []).map((l) => `<span class="badge">${escapeHtml(l.name)}</span>`).join(' ') || 'Меток нет'}</p>
-      <div class="row" style="margin:0.6rem 0">
+      <p class="chip-row">${(labels || []).map((l) => `<span class="badge">${escapeHtml(l.name)}</span>`).join(' ') || 'Меток нет'}</p>
+      <div class="row side-actions">
         <button type="button" class="btn small" id="addLabelBtn">+ Метка</button>
         <button type="button" class="btn small" id="addSprintBtn">+ Спринт</button>
       </div>
       <ul class="people-list">${(sprints || []).map((s) =>
-        `<li><span>${escapeHtml(s.name)}</span><span class="role-pill">${escapeHtml(s.status)}</span></li>`).join('') || '<li>Спринтов нет</li>'}</ul>
+        `<li><span>${escapeHtml(s.name)}</span><span class="role-pill">${escapeHtml(label(LABELS.status, s.status))}</span></li>`).join('') || '<li>Спринтов нет</li>'}</ul>
     </section>
-    <section class="block" style="grid-column:1/-1">
+    <section class="block activity-block">
       <h3>Активность</h3>
       <ul class="people-list">${activity.map((a) =>
-        `<li><span>${escapeHtml(a.actorName || '')}: ${escapeHtml(a.action)}</span></li>`).join('') || '<li>пусто</li>'}</ul>
+        `<li><span>${escapeHtml(a.actorName || '')}: ${escapeHtml(a.action)}</span></li>`).join('') || '<li>Пока тихо</li>'}</ul>
     </section>`;
 
   els.projectSidePanel.querySelector('#addLabelBtn')?.addEventListener('click', () => {
     openModal('Новая метка', [
       { name: 'name', label: 'Название', required: true },
-      { name: 'color', label: 'Цвет (#hex)', value: '#0f766e' },
+      { name: 'color', label: 'Цвет', inputType: 'color', value: '#0f766e' },
     ], async (values) => {
       await api(`/projects/${state.selectedProjectId}/labels`, {
         method: 'POST',
@@ -557,7 +592,7 @@ async function renderProjectSidePanel() {
 function renderBoards() {
   els.boardsArea.innerHTML = '';
   if (!state.boards.length) {
-    els.boardsArea.innerHTML = '<p class="empty">В проекте пока нет досок. Нажмите «+ Доска».</p>';
+    els.boardsArea.innerHTML = '<p class="empty">Нет досок. Нажмите «+ Доска».</p>';
     return;
   }
   state.boards.forEach((board) => {
@@ -566,7 +601,7 @@ function renderBoards() {
     const columns = state.columnsByBoard[board.id] || [];
     section.innerHTML = `
       <div class="board-head">
-        <h3>${escapeHtml(board.name)} <span class="badge">${escapeHtml(board.accessMode || 'OPEN')}</span></h3>
+        <h3>${escapeHtml(board.name)} <span class="badge">${escapeHtml(label(LABELS.access, board.accessMode || 'OPEN'))}</span></h3>
         <div class="row">
           <button type="button" class="btn small ghost" data-acl="${board.id}">Доступ</button>
           <button type="button" class="btn small" data-add-col="${board.id}">+ Колонка</button>
@@ -578,10 +613,11 @@ function renderBoards() {
       const colEl = document.createElement('div');
       colEl.className = 'column';
       const tasks = state.tasksByColumn[col.id] || [];
+      const wip = col.wipLimit != null ? ` · лимит ${col.wipLimit}` : '';
       colEl.innerHTML = `
         <div class="col-head">
-          <strong>${escapeHtml(col.name)}${col.wipLimit != null ? ` · WIP ${col.wipLimit}` : ''}</strong>
-          <button type="button" class="btn small" data-add-task="${col.id}">+ Задача</button>
+          <strong>${escapeHtml(col.name)}${wip}</strong>
+          <button type="button" class="btn small" data-add-task="${col.id}">+</button>
         </div>`;
       tasks.forEach((task) => colEl.appendChild(renderTask(task, columns)));
       colsEl.appendChild(colEl);
@@ -590,17 +626,10 @@ function renderBoards() {
     section.querySelector('[data-add-col]').addEventListener('click', () => {
       openModal('Новая колонка', [
         { name: 'name', label: 'Название', required: true },
-        { name: 'wipLimit', label: 'WIP limit (опц.)', inputType: 'number' },
-        { name: 'mappedStatus', label: 'Статус при переносе', type: 'select',
-          options: [{ value: '', label: '—' }, 'BACKLOG', 'IN_PROGRESS', 'DONE', 'ARCHIVED'] },
       ], async (values) => {
         await api(`/boards/${board.id}/columns`, {
           method: 'POST',
-          body: JSON.stringify({
-            name: values.name,
-            wipLimit: values.wipLimit ? Number(values.wipLimit) : null,
-            mappedStatus: values.mappedStatus || null,
-          }),
+          body: JSON.stringify({ name: values.name, wipLimit: null, mappedStatus: null }),
         });
         await openProject(state.selectedProjectId);
       });
@@ -611,9 +640,9 @@ function renderBoards() {
         { value: '', label: '—' },
         ...(state.orgTeams || []).map((t) => ({ value: String(t.id), label: t.name })),
       ];
-      openModal(`Доступ к доске «${board.name}»`, [
-        { name: 'accessMode', label: 'Режим', type: 'select', options: ['OPEN', 'PRIVATE', 'TEAM_ACL'], value: board.accessMode || 'OPEN' },
-        { name: 'teamId', label: 'Команда (для TEAM_ACL)', type: 'select', options: teamOpts,
+      openModal(`Доступ: ${board.name}`, [
+        { name: 'accessMode', label: 'Режим', type: 'select', options: ACCESS_OPTS, value: board.accessMode || 'OPEN' },
+        { name: 'teamId', label: 'Команда', type: 'select', options: teamOpts,
           value: board.teamIds?.[0] != null ? String(board.teamIds[0]) : '' },
       ], async (values) => {
         await api(`/projects/${state.selectedProjectId}/boards/${board.id}`, {
@@ -638,16 +667,15 @@ function renderBoards() {
 
 function openTaskEditor(columnId, existing = null) {
   const isEdit = !!existing;
-  openModal(isEdit ? `Задача #${existing.id}` : 'Новая задача', [
-    { name: 'title', label: 'Заголовок', required: true, value: existing?.title || '' },
+  openModal(isEdit ? 'Изменить задачу' : 'Новая задача', [
+    { name: 'title', label: 'Название', required: true, value: existing?.title || '' },
     { name: 'description', label: 'Описание', value: existing?.description || '' },
-    { name: 'priority', label: 'Приоритет', type: 'select', options: ['LOW', 'MEDIUM', 'HIGH'], value: existing?.priority || 'MEDIUM' },
-    { name: 'status', label: 'Статус', type: 'select', options: ['BACKLOG', 'IN_PROGRESS', 'DONE', 'ARCHIVED'], value: existing?.status || 'BACKLOG' },
+    { name: 'priority', label: 'Приоритет', type: 'select', options: PRIORITY_OPTS, value: existing?.priority || 'MEDIUM' },
+    { name: 'status', label: 'Статус', type: 'select', options: STATUS_OPTS, value: existing?.status || 'BACKLOG' },
     { name: 'deadline', label: 'Дедлайн', inputType: 'date', value: existing?.deadline || '' },
     { name: 'assigneeId', label: 'Исполнитель', type: 'select', options: memberOptions(true),
       value: existing?.assigneeId != null ? String(existing.assigneeId) : '' },
-    { name: 'taskType', label: 'Тип', type: 'select',
-      options: [{ value: '', label: '—' }, 'BUG', 'FEATURE', 'CHORE'], value: existing?.taskType || '' },
+    { name: 'taskType', label: 'Тип', type: 'select', options: TASK_TYPE_OPTS, value: existing?.taskType || '' },
   ], async (values) => {
     const payload = {
       title: values.title,
@@ -668,57 +696,54 @@ function openTaskEditor(columnId, existing = null) {
   });
 }
 
+function truncate(text, n = 90) {
+  const s = String(text || '');
+  return s.length > n ? `${s.slice(0, n)}…` : s;
+}
+
 function renderTask(task, columns) {
   const el = document.createElement('article');
   el.className = 'task';
+  const moveOpts = columns.map((c) =>
+    `<option value="${c.id}" ${c.id === task.columnId ? 'selected' : ''}>${escapeHtml(c.name)}</option>`).join('');
   el.innerHTML = `
-    <h4>${escapeHtml(task.title)}</h4>
-    <p>${escapeHtml(task.description || '')}</p>
+    <h4>${escapeHtml(task.title)}${task.overdue ? ' <span class="badge overdue">Просрочено</span>' : ''}</h4>
+    ${task.description ? `<p>${escapeHtml(truncate(task.description))}</p>` : ''}
     <div class="badges">
-      <span class="badge ${escapeHtml(task.priority)}">${escapeHtml(task.priority)}</span>
-      <span class="badge">${escapeHtml(task.status)}</span>
+      <span class="badge ${escapeHtml(task.priority)}">${escapeHtml(label(LABELS.priority, task.priority))}</span>
       ${task.assigneeName ? `<span class="badge">${escapeHtml(task.assigneeName)}</span>` : ''}
     </div>
-    <div class="task-actions"></div>`;
-  const actions = el.querySelector('.task-actions');
-  const editBtn = document.createElement('button');
-  editBtn.type = 'button';
-  editBtn.textContent = 'Изменить';
-  editBtn.addEventListener('click', async () => {
-    try { openTaskEditor((await api(`/tasks/${task.id}`)).columnId, await api(`/tasks/${task.id}`)); }
-    catch (err) { toast(err.message); }
+    <div class="task-actions">
+      <button type="button" class="edit-btn">Изменить</button>
+      <button type="button" class="extras-btn">Ещё</button>
+      <select class="move-select" aria-label="Переместить">${moveOpts}</select>
+    </div>`;
+  el.querySelector('.edit-btn').addEventListener('click', async () => {
+    try {
+      const full = await api(`/tasks/${task.id}`);
+      openTaskEditor(full.columnId, full);
+    } catch (err) { toast(err.message); }
   });
-  actions.appendChild(editBtn);
-
-  const extrasBtn = document.createElement('button');
-  extrasBtn.type = 'button';
-  extrasBtn.textContent = 'Коммент / чеклист';
-  extrasBtn.addEventListener('click', () => openTaskExtras(task.id));
-  actions.appendChild(extrasBtn);
-
-  columns.filter((c) => c.id !== task.columnId).forEach((c) => {
-    const b = document.createElement('button');
-    b.type = 'button';
-    b.textContent = `→ ${c.name}`;
-    b.addEventListener('click', async () => {
-      try {
-        await api(`/tasks/${task.id}/move`, { method: 'PATCH', body: JSON.stringify({ columnId: c.id }) });
-        await openProject(state.selectedProjectId);
-      } catch (err) { toast(err.message); }
-    });
-    actions.appendChild(b);
+  el.querySelector('.extras-btn').addEventListener('click', () => openTaskExtras(task.id));
+  el.querySelector('.move-select').addEventListener('change', async (e) => {
+    const columnId = Number(e.target.value);
+    if (columnId === task.columnId) return;
+    try {
+      await api(`/tasks/${task.id}/move`, { method: 'PATCH', body: JSON.stringify({ columnId }) });
+      await openProject(state.selectedProjectId);
+    } catch (err) { toast(err.message); e.target.value = String(task.columnId); }
   });
   return el;
 }
 
 async function openTaskExtras(taskId) {
-  openModal('Комментарий или пункт чеклиста', [
+  openModal('Комментарий или чеклист', [
     { name: 'action', label: 'Действие', type: 'select', options: [
-      { value: 'comment', label: 'Добавить комментарий' },
-      { value: 'checklist', label: 'Добавить пункт чеклиста' },
-      { value: 'suggest-dod', label: 'Подсказать DoD' },
+      { value: 'comment', label: 'Комментарий' },
+      { value: 'checklist', label: 'Пункт чеклиста' },
+      { value: 'suggest-dod', label: 'Предложить чеклист готовности' },
     ], value: 'comment' },
-    { name: 'text', label: 'Текст (для комментария / пункта)' },
+    { name: 'text', label: 'Текст' },
   ], async (values) => {
     if (values.action === 'suggest-dod') {
       const suggestion = await api(`/tasks/${taskId}/ai/suggest-dod`, { method: 'POST', body: '{}' });
@@ -726,7 +751,7 @@ async function openTaskExtras(taskId) {
         method: 'POST',
         body: JSON.stringify((suggestion.items || []).map((i) => ({ title: i.title, done: false }))),
       });
-      toast('DoD добавлен в чеклист');
+      toast('Чеклист готовности добавлен');
       return;
     }
     if (!values.text) throw new Error('Введите текст');
@@ -735,7 +760,7 @@ async function openTaskExtras(taskId) {
       toast('Комментарий добавлен');
     } else {
       await api(`/tasks/${taskId}/checklist`, { method: 'POST', body: JSON.stringify({ title: values.text, done: false }) });
-      toast('Пункт чеклиста добавлен');
+      toast('Пункт добавлен');
     }
   });
 }
@@ -743,7 +768,7 @@ async function openTaskExtras(taskId) {
 els.newOrgBtn.addEventListener('click', () => {
   openModal('Новая организация', [
     { name: 'name', label: 'Название', required: true },
-    { name: 'type', label: 'Тип', type: 'select', options: ['LOCAL', 'COMMERCIAL'], value: 'LOCAL' },
+    { name: 'type', label: 'Тип', type: 'select', options: ORG_TYPE_OPTS, value: 'LOCAL' },
   ], async (values) => {
     const org = await api('/organizations', {
       method: 'POST',
@@ -758,17 +783,15 @@ els.newOrgBtn.addEventListener('click', () => {
 
 els.newProjectBtn.addEventListener('click', () => {
   const orgOpts = [
-    { value: '', label: 'Личный (без организации)' },
+    { value: '', label: 'Личный проект' },
     ...(state.organizations || []).map((o) => ({ value: String(o.id), label: o.name })),
   ];
   openModal('Новый проект', [
     { name: 'name', label: 'Название', required: true },
     { name: 'description', label: 'Описание' },
     { name: 'organizationId', label: 'Организация', type: 'select', options: orgOpts, value: '' },
-    { name: 'withDefaultBoard', label: 'Стартовая доска Todo/Doing/Done', type: 'select',
-      options: [{ value: 'true', label: 'Да' }, { value: 'false', label: 'Нет' }], value: 'true' },
-    { name: 'strictBusinessRules', label: 'Строгие правила', type: 'select',
-      options: [{ value: 'false', label: 'Нет' }, { value: 'true', label: 'Да' }], value: 'false' },
+    { name: 'withDefaultBoard', label: 'Стартовая доска', type: 'select',
+      options: [{ value: 'true', label: 'Да (Todo / Doing / Done)' }, { value: 'false', label: 'Нет' }], value: 'true' },
   ], async (values) => {
     const project = await api('/projects', {
       method: 'POST',
@@ -776,7 +799,7 @@ els.newProjectBtn.addEventListener('click', () => {
         name: values.name,
         description: values.description || null,
         organizationId: values.organizationId ? Number(values.organizationId) : null,
-        strictBusinessRules: values.strictBusinessRules === 'true',
+        strictBusinessRules: false,
         withDefaultBoard: values.withDefaultBoard === 'true',
       }),
     });
@@ -794,8 +817,8 @@ els.newBoardBtn.addEventListener('click', () => {
   ];
   openModal('Новая доска', [
     { name: 'name', label: 'Название', required: true },
-    { name: 'accessMode', label: 'Доступ', type: 'select', options: ['OPEN', 'PRIVATE', 'TEAM_ACL'], value: 'OPEN' },
-    { name: 'teamId', label: 'Команда (если TEAM_ACL)', type: 'select', options: teamOpts, value: '' },
+    { name: 'accessMode', label: 'Доступ', type: 'select', options: ACCESS_OPTS, value: 'OPEN' },
+    { name: 'teamId', label: 'Команда', type: 'select', options: teamOpts, value: '' },
   ], async (values) => {
     const body = { name: values.name, accessMode: values.accessMode || 'OPEN' };
     if (values.accessMode === 'TEAM_ACL' && values.teamId) body.teamIds = [Number(values.teamId)];
@@ -816,8 +839,8 @@ function openModal(title, fields, onSubmit) {
   els.modalError.textContent = '';
   els.modalFields.innerHTML = '';
   fields.forEach((f) => {
-    const label = document.createElement('label');
-    label.append(f.label);
+    const labelEl = document.createElement('label');
+    labelEl.append(f.label);
     let input;
     if (f.type === 'select') {
       input = document.createElement('select');
@@ -836,8 +859,8 @@ function openModal(title, fields, onSubmit) {
       if (f.required) input.required = true;
       if (f.value != null && f.value !== '') input.value = f.value;
     }
-    label.appendChild(input);
-    els.modalFields.appendChild(label);
+    labelEl.appendChild(input);
+    els.modalFields.appendChild(labelEl);
   });
   modalSubmit = onSubmit;
   els.modal.showModal();

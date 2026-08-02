@@ -30,8 +30,8 @@
     <section id="authView" class="auth-shell">
       <div class="auth-card">
         <p class="eyebrow">Task Manager</p>
-        <h1>Войдите, чтобы управлять проектами и командами</h1>
-        <p class="lede">Один аккаунт для Web, Android и CLI.</p>
+        <h1>Вход в рабочее пространство</h1>
+        <p class="lede">Проекты, доски и команды в одном месте.</p>
 
         <div class="tabs" role="tablist">
           <button type="button" class="tab active" data-tab="login">Вход</button>
@@ -50,14 +50,6 @@
           <label>Пароль <input name="password" type="password" required minlength="6" autocomplete="new-password" /></label>
           <button class="btn primary" type="submit">Создать аккаунт</button>
         </form>
-
-        <details class="api-details">
-          <summary>Настройки API</summary>
-          <label class="api-url">
-            Базовый URL
-            <input id="apiBase" type="url" value="http://localhost:8080/api/v1" />
-          </label>
-        </details>
         <p class="hint" id="authError" role="alert"></p>
       </div>
     </section>
@@ -67,7 +59,7 @@
 
       <nav class="workspace-nav" aria-label="Разделы">
         <button type="button" class="nav-btn active" data-view="projects">Проекты</button>
-        <button type="button" class="nav-btn" data-view="organizations">Организации и команды</button>
+        <button type="button" class="nav-btn" data-view="organizations">Организации</button>
       </nav>
 
       <div id="projectsView" class="workspace">
@@ -75,7 +67,7 @@
           <div class="rail-head">
             <div>
               <h2>Проекты</h2>
-              <p class="rail-hint">Выберите проект или создайте новый</p>
+              <p class="rail-hint">Выберите или создайте проект</p>
             </div>
             <button type="button" class="btn primary small" id="newProjectBtn">+ Проект</button>
           </div>
@@ -85,7 +77,7 @@
         <section class="panel stage">
           <div id="emptyState" class="empty">
             <h3>Проект не выбран</h3>
-            <p>Слева откройте проект — здесь появятся доски, задачи и участники.</p>
+            <p>Слева откройте проект — появятся доски и задачи.</p>
           </div>
           <div id="projectDetail" hidden>
             <header class="detail-head">
@@ -94,7 +86,7 @@
                 <h2 id="projectTitle"></h2>
               </div>
               <div class="row">
-                <button type="button" class="btn small" id="inviteMemberBtn">Пригласить в проект</button>
+                <button type="button" class="btn small" id="inviteMemberBtn">Пригласить</button>
                 <button type="button" class="btn primary small" id="newBoardBtn">+ Доска</button>
               </div>
             </header>
@@ -104,6 +96,7 @@
               <button type="button" class="btn ghost small" id="loadNotifs">Уведомления</button>
             </div>
             <div id="searchResults" class="search-results" hidden></div>
+            <div id="notifResults" class="search-results" hidden></div>
             <div id="boardsArea"></div>
             <div id="projectSidePanel" class="side-grid"></div>
           </div>
@@ -115,7 +108,7 @@
           <div class="rail-head">
             <div>
               <h2>Организации</h2>
-              <p class="rail-hint">Команды и участники живут здесь</p>
+              <p class="rail-hint">Участники и команды</p>
             </div>
             <button type="button" class="btn primary small" id="newOrgBtn">+ Организация</button>
           </div>
@@ -124,13 +117,8 @@
 
         <section class="panel stage">
           <div id="orgEmpty" class="empty">
-            <h3>Как устроена работа</h3>
-            <ol class="howto">
-              <li>Создайте <strong>организацию</strong> (кнопка слева).</li>
-              <li>Добавьте <strong>участников</strong> по email.</li>
-              <li>Создайте <strong>команды</strong> и распределите людей по ним.</li>
-              <li>Создавайте проекты внутри организации и доски с доступом TEAM_ACL.</li>
-            </ol>
+            <h3>Организации</h3>
+            <p>Создайте организацию, добавьте коллег и команды — затем привяжите к ней проекты.</p>
           </div>
           <div id="orgDetail" hidden>
             <header class="detail-head">
@@ -141,16 +129,14 @@
             </header>
             <div class="org-grid">
               <section class="block">
-                <div class="block-head">
-                  <h3>Участники организации</h3>
-                </div>
+                <div class="block-head"><h3>Участники</h3></div>
                 <form id="addOrgMemberForm" class="inline-form">
                   <label>Email <input name="email" type="email" required placeholder="colleague@example.com" /></label>
                   <label>Роль
                     <select name="role">
-                      <option value="MEMBER">MEMBER</option>
-                      <option value="ADMIN">ADMIN</option>
-                      <option value="VIEWER">VIEWER</option>
+                      <option value="MEMBER">Участник</option>
+                      <option value="ADMIN">Админ</option>
+                      <option value="VIEWER">Наблюдатель</option>
                     </select>
                   </label>
                   <button class="btn primary small" type="submit">Добавить</button>
@@ -159,12 +145,10 @@
               </section>
 
               <section class="block">
-                <div class="block-head">
-                  <h3>Команды</h3>
-                </div>
-                <form id="addTeamForm" class="inline-form">
-                  <label>Название команды <input name="name" type="text" required placeholder="Backend, Design…" /></label>
-                  <button class="btn primary small" type="submit">Создать команду</button>
+                <div class="block-head"><h3>Команды</h3></div>
+                <form id="addTeamForm" class="inline-form team-create">
+                  <label>Название <input name="name" type="text" required placeholder="Backend, Design…" /></label>
+                  <button class="btn primary small" type="submit">Создать</button>
                 </form>
                 <div id="teamsArea" class="teams-area"></div>
               </section>
@@ -178,7 +162,7 @@
   <dialog id="modal">
     <form method="dialog" id="modalForm" class="form">
       <h3 id="modalTitle"></h3>
-      <div id="modalFields"></div>
+      <div id="modalFields" class="modal-fields"></div>
       <div class="row">
         <button type="submit" class="btn primary" value="ok">Сохранить</button>
         <button type="submit" class="btn ghost" value="cancel">Отмена</button>

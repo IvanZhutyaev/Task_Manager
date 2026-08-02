@@ -181,9 +181,13 @@ input:focus, select:focus, textarea:focus {
   border-color: var(--teal);
 }
 
-.api-details { margin-top: 1rem; color: var(--muted); }
-.api-details summary { cursor: pointer; }
 .hint { color: var(--rose); min-height: 1.2em; font-size: 0.9rem; margin: 0.4rem 0 0; }
+.empty-rail { padding: 0.5rem; }
+.invite-list, .results-list { margin-top: 0.6rem; }
+.side-actions { margin: 0.6rem 0; }
+.chip-row { margin: 0; }
+.activity-block { grid-column: 1 / -1; }
+.inline-form.team-create { grid-template-columns: 1fr auto; }
 
 .banner {
   margin-bottom: 1rem;
@@ -330,12 +334,14 @@ input:focus, select:focus, textarea:focus {
   border-top: 1px solid var(--line);
 }
 .columns {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  display: flex;
   gap: 0.85rem;
   margin-top: 0.85rem;
+  overflow-x: auto;
+  padding-bottom: 0.5rem;
 }
 .column {
+  flex: 0 0 260px;
   background: rgba(15, 23, 42, 0.03);
   border: 1px solid var(--line);
   border-radius: 14px;
@@ -372,8 +378,13 @@ input:focus, select:focus, textarea:focus {
 .badge.MEDIUM { color: var(--amber); border-color: rgba(180, 83, 9, 0.35); }
 .badge.LOW { color: var(--teal-deep); border-color: rgba(15, 118, 110, 0.35); }
 
-.task-actions { display: flex; flex-wrap: wrap; gap: 0.3rem; }
-.task-actions button {
+.task-actions {
+  display: grid;
+  grid-template-columns: auto auto 1fr;
+  gap: 0.3rem;
+  align-items: center;
+}
+.task-actions button, .task-actions select {
   font: inherit;
   font-size: 0.76rem;
   padding: 0.22rem 0.45rem;
@@ -383,7 +394,8 @@ input:focus, select:focus, textarea:focus {
   color: var(--muted);
   cursor: pointer;
 }
-.task-actions button:hover { color: var(--ink); border-color: var(--teal); }
+.task-actions button:hover, .task-actions select:hover { color: var(--ink); border-color: var(--teal); }
+.badge.overdue { color: var(--rose); border-color: rgba(190, 18, 60, 0.35); }
 
 dialog {
   border: 1px solid var(--line);
@@ -392,9 +404,21 @@ dialog {
   color: var(--ink);
   padding: 1.25rem;
   width: min(440px, 92vw);
+  max-height: min(85vh, 720px);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
   box-shadow: var(--shadow);
 }
 dialog::backdrop { background: rgba(15, 23, 42, 0.45); }
+dialog form { display: flex; flex-direction: column; min-height: 0; gap: 0.8rem; }
+.modal-fields {
+  display: grid;
+  gap: 0.8rem;
+  overflow-y: auto;
+  max-height: min(55vh, 480px);
+  padding-right: 0.15rem;
+}
 
 .toast {
   position: fixed;

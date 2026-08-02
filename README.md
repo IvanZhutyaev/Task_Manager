@@ -6,11 +6,14 @@
 
 ```
 Task_Manager_API/   Spring Boot backend (Java 17, JWT, Liquibase)
-                    + Demo UI (Thymeleaf) на том же порту
+                    + Web UI (Thymeleaf) на том же порту
 clients/web-spa/    Браузерный SPA (HTML/JS/CSS)
 clients/cli/        CLI (Python)
 clients/android/    Android-клиент (Kotlin) — только локально / Android Studio
 ```
+
+Клиенты ориентированы на пользователя: без технических ID, Swagger и сырых enum’ов в интерфейсе.  
+Swagger доступен только у API: http://localhost:8080/swagger-ui.html
 
 ## Docker (рекомендуемый запуск)
 
@@ -20,7 +23,7 @@ clients/android/    Android-клиент (Kotlin) — только локаль�
 
 | Сервис | Что это | Адрес / как пользоваться |
 |--------|---------|--------------------------|
-| `api` | REST API + Demo UI (Thymeleaf) | http://localhost:8080 — API `/api/v1`, Swagger `/swagger-ui.html`, вход `/login` |
+| `api` | REST API + Web UI | http://localhost:8080 — API `/api/v1`, вход `/login`, Swagger `/swagger-ui.html` |
 | `web-spa` | Браузерный SPA | http://localhost:3000 |
 | `cli` | Python CLI | `docker compose exec cli tm …` |
 | `postgres` | БД (prod-профиль) | `localhost:5432` |
@@ -75,7 +78,7 @@ docker compose down -v       # + удалить данные Postgres и CLI
 docker compose -f docker-compose.dev.yml up --build -d
 ```
 
-То же самое: `api` (с Demo UI), `web-spa`, `cli` — без сервиса `postgres`.
+То же самое: `api` (с Web UI), `web-spa`, `cli` — без сервиса `postgres`.
 
 ### Переменные окружения
 
@@ -92,7 +95,7 @@ mvn spring-boot:run
 
 - API: http://localhost:8080/api/v1  
 - Swagger: http://localhost:8080/swagger-ui.html  
-- Demo UI: http://localhost:8080/login  
+- Web UI: http://localhost:8080/login  
 
 Prod-профиль: `SPRING_PROFILES_ACTIVE=prod` + `DB_URL` / `DB_USER` / `DB_PASSWORD` + `JWT_SECRET`.
 
@@ -107,9 +110,10 @@ cd clients/web-spa
 npx --yes serve -l 3000
 ```
 
-Откройте http://localhost:3000
+Откройте http://localhost:3000  
+API по умолчанию: `http://localhost:8080/api/v1` (без настроек в UI).
 
-### Demo UI (Thymeleaf)
+### Web UI (Thymeleaf)
 
 Идёт вместе с backend: http://localhost:8080/login
 
@@ -119,16 +123,18 @@ npx --yes serve -l 3000
 cd clients/cli
 tm.bat health
 # или: python tm.py health
+# полный JSON при необходимости: tm.bat projects --json
 ```
 
 ### Android
 
 В Docker не запускается. Откройте `clients/android` в Android Studio и Run на эмуляторе.  
-URL по умолчанию: `http://10.0.2.2:8080/api/v1` (API на хосте).
+URL по умолчанию: `http://10.0.2.2:8080/api/v1` (API на хосте).  
+Сменить URL можно долгим нажатием на бренд на экране входа.
 
 ## Стек
 
 - Java 17, Spring Boot 3, Spring Security + JWT  
 - Spring Data JPA, Liquibase, H2 (dev) / PostgreSQL (prod)  
-- OpenAPI / Swagger  
+- OpenAPI / Swagger (только API)  
 - Docker Compose: API + Postgres + Web SPA + CLI  

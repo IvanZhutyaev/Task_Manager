@@ -73,7 +73,9 @@ class EntityAdapter(
         fun bind(item: EntityItem) {
             binding.title.text = item.title
             binding.subtitle.text = item.subtitle
+            binding.subtitle.visibility = if (item.subtitle.isBlank()) View.GONE else View.VISIBLE
             binding.badge.text = item.badge
+            binding.badge.visibility = if (item.badge.isBlank()) View.GONE else View.VISIBLE
             binding.root.setOnClickListener { onClick(item) }
         }
     }
@@ -100,8 +102,9 @@ class PersonAdapter : RecyclerView.Adapter<PersonAdapter.VH>() {
         fun bind(item: Triple<String, String, String>) {
             binding.name.text = item.first
             binding.email.text = item.second
-            binding.role.text = item.third
-            binding.role.visibility = if (item.third.isBlank()) View.GONE else View.VISIBLE
+            val roleLabel = L10n.role(item.third)
+            binding.role.text = roleLabel
+            binding.role.visibility = if (roleLabel.isBlank()) View.GONE else View.VISIBLE
         }
     }
 }
@@ -156,13 +159,17 @@ class BoardAdapter(
     inner class VH(private val binding: ItemBoardBinding) : RecyclerView.ViewHolder(binding.root) {
         fun bind(item: BoardDto) {
             binding.boardName.text = item.name
-            binding.boardMeta.text = "Доступ: ${item.accessMode ?: "OPEN"}"
+            val accessLabel = L10n.boardAccessLabel(item.accessMode)
+            binding.boardMeta.text = accessLabel.orEmpty()
+            binding.boardMeta.visibility = if (accessLabel.isNullOrBlank()) View.GONE else View.VISIBLE
             binding.root.setOnClickListener { onClick(item) }
         }
     }
 }
 
-class TaskAdapter : RecyclerView.Adapter<TaskAdapter.VH>() {
+class TaskAdapter(
+    private val columnMappedStatus: String? = null
+) : RecyclerView.Adapter<TaskAdapter.VH>() {
     private val items = mutableListOf<TaskDto>()
 
     fun submit(data: List<TaskDto>) {
@@ -173,17 +180,19 @@ class TaskAdapter : RecyclerView.Adapter<TaskAdapter.VH>() {
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): VH {
         val binding = ItemTaskBinding.inflate(LayoutInflater.from(parent.context), parent, false)
-        return VH(binding)
+        return VH(binding, columnMappedStatus)
     }
 
     override fun onBindViewHolder(holder: VH, position: Int) = holder.bind(items[position])
     override fun getItemCount() = items.size
 
-    class VH(private val binding: ItemTaskBinding) : RecyclerView.ViewHolder(binding.root) {
+    class VH(
+        private val binding: ItemTaskBinding,
+        private val columnMappedStatus: String?
+    ) : RecyclerView.ViewHolder(binding.root) {
         fun bind(item: TaskDto) {
             binding.taskTitle.text = item.title
-            val who = item.assigneeName ?: "без исполнителя"
-            binding.taskMeta.text = "${item.priority} · ${item.status} · $who"
+            binding.taskMeta.text = L10n.taskMeta(item, columnMappedStatus)
         }
     }
 }
