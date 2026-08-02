@@ -7,6 +7,7 @@ import java.time.Instant;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 
 class GlobalExceptionHandlerTest {
 
@@ -24,5 +25,17 @@ class GlobalExceptionHandlerTest {
         assertEquals("Access denied", body.getMessage());
         assertNotNull(body.getTimestamp());
         assertEquals(Instant.class, body.getTimestamp().getClass());
+    }
+
+    @Test
+    void unreadableBodyReturnsBadRequest() {
+        ResponseEntity<ApiErrorResponse> response =
+                handler.handleUnreadable(new HttpMessageNotReadableException("bad json"));
+
+        assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+        ApiErrorResponse body = response.getBody();
+        assertNotNull(body);
+        assertEquals(400, body.getStatus());
+        assertEquals("Invalid request body", body.getMessage());
     }
 }
