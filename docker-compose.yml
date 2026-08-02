@@ -17,6 +17,7 @@ services:
       timeout: 5s
       retries: 10
 
+  # Backend + встроенный Demo UI (Thymeleaf) на :8080
   api:
     build:
       context: ./Task_Manager_API
@@ -33,6 +34,7 @@ services:
         condition: service_healthy
     restart: unless-stopped
 
+  # Браузерный клиент
   web-spa:
     build:
       context: ./clients/web-spa
@@ -43,5 +45,24 @@ services:
         condition: service_healthy
     restart: unless-stopped
 
+  # CLI-клиент (Python). После up — контейнер живёт для exec/run.
+  # Примеры:
+  #   docker compose exec cli tm health
+  #   docker compose run --rm --entrypoint tm cli login --email u@ex.com --password secret12
+  cli:
+    build:
+      context: ./clients/cli
+    environment:
+      TM_API_BASE: http://api:8080/api/v1
+      HOME: /data
+    volumes:
+      - cli-data:/data
+    depends_on:
+      api:
+        condition: service_healthy
+    entrypoint: ["sleep", "infinity"]
+    restart: unless-stopped
+
 volumes:
   pgdata:
+  cli-data:

@@ -6,14 +6,28 @@
 
 ```
 Task_Manager_API/   Spring Boot backend (Java 17, JWT, Liquibase)
+                    + Demo UI (Thymeleaf) на том же порту
 clients/web-spa/    Браузерный SPA (HTML/JS/CSS)
-clients/android/    Android-клиент (Kotlin)
 clients/cli/        CLI (Python)
+clients/android/    Android-клиент (Kotlin) — только локально / Android Studio
 ```
 
 ## Docker (рекомендуемый запуск)
 
 Нужны Docker Desktop / Docker Engine + Compose.
+
+Одним командой поднимаются **backend** и **все клиенты, кроме Android**:
+
+| Сервис | Что это | Адрес / как пользоваться |
+|--------|---------|--------------------------|
+| `api` | REST API + Demo UI (Thymeleaf) | http://localhost:8080 — API `/api/v1`, Swagger `/swagger-ui.html`, вход `/login` |
+| `web-spa` | Браузерный SPA | http://localhost:3000 |
+| `cli` | Python CLI | `docker compose exec cli tm …` |
+| `postgres` | БД (prod-профиль) | `localhost:5432` |
+
+Android в Docker **не** входит: нужен эмулятор / устройство и Android Studio.
+
+### Быстрый старт
 
 ```bash
 # из корня репозитория
@@ -21,21 +35,53 @@ cp .env.example .env   # опционально: пароли и JWT_SECRET
 docker compose up --build -d
 ```
 
-> Если Compose ругается на пустое имя проекта (кириллица в пути), уже задано `name: taskmanager` в `docker-compose.yml`. Альтернатива: `docker compose -p taskmanager up --build -d`.
+> В `docker-compose.yml` задано `name: taskmanager` (удобно при кириллице в пути папки).  
+> Альтернатива: `docker compose -p taskmanager up --build -d`.
 
-Поднимутся:
-- **API** — http://localhost:8080 (`/api/v1`, Swagger, demo UI `/login`)
-- **Web SPA** — http://localhost:3000
-- **PostgreSQL** — `localhost:5432`
-
-Остановка: `docker compose down`  
-С очисткой данных БД: `docker compose down -v`
-
-Без Postgres (H2 in-memory):
+Проверка:
 
 ```bash
-docker compose -f docker-compose.dev.yml up --build
+curl http://localhost:8080/api/v1/health
+# браузер: http://localhost:3000  и  http://localhost:8080/login
+docker compose exec cli tm health
 ```
+
+### CLI в Docker
+
+Токен и настройки хранятся в volume `cli-data` (`HOME=/data` → `/data/.taskmanager_cli.json`).
+
+```bash
+docker compose exec cli tm health
+docker compose exec cli tm register --email cli@example.com --password secret12 --name "CLI User"
+docker compose exec cli tm login --email cli@example.com --password secret12
+docker compose exec cli tm projects
+
+# одноразовый запуск (переопределяет sleep infinity):
+docker compose run --rm --entrypoint tm cli health
+```
+
+Внутри сети Compose CLI ходит на API по адресу `http://api:8080/api/v1` (переменная `TM_API_BASE`).
+
+### Остановка
+
+```bash
+docker compose down          # остановить контейнеры
+docker compose down -v       # + удалить данные Postgres и CLI
+```
+
+### Режим без PostgreSQL (H2)
+
+```bash
+docker compose -f docker-compose.dev.yml up --build -d
+```
+
+То же самое: `api` (с Demo UI), `web-spa`, `cli` — без сервиса `postgres`.
+
+### Переменные окружения
+
+См. `.env.example`: `POSTGRES_*`, `JWT_SECRET`.
+
+---
 
 ## Backend (локально без Docker)
 
@@ -48,7 +94,9 @@ mvn spring-boot:run
 - Swagger: http://localhost:8080/swagger-ui.html  
 - Demo UI: http://localhost:8080/login  
 
-## Клиенты
+Prod-профиль: `SPRING_PROFILES_ACTIVE=prod` + `DB_URL` / `DB_USER` / `DB_PASSWORD` + `JWT_SECRET`.
+
+## Клиенты (локально без Docker)
 
 Все ходят в один контракт: `JSON + JWT`.
 
@@ -61,10 +109,9 @@ npx --yes serve -l 3000
 
 Откройте http://localhost:3000
 
-### Android
+### Demo UI (Thymeleaf)
 
-Откройте `clients/android` в Android Studio и Run на эмуляторе.  
-URL по умолчанию: `http://10.0.2.2:8080/api/v1`
+Идёт вместе с backend: http://localhost:8080/login
 
 ### CLI
 
@@ -74,8 +121,14 @@ tm.bat health
 # или: python tm.py health
 ```
 
+### Android
+
+В Docker не запускается. Откройте `clients/android` в Android Studio и Run на эмуляторе.  
+URL по умолчанию: `http://10.0.2.2:8080/api/v1` (API на хосте).
+
 ## Стек
 
 - Java 17, Spring Boot 3, Spring Security + JWT  
 - Spring Data JPA, Liquibase, H2 (dev) / PostgreSQL (prod)  
 - OpenAPI / Swagger  
+- Docker Compose: API + Postgres + Web SPA + CLI  

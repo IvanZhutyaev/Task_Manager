@@ -1,5 +1,5 @@
 # Упрощённый запуск без PostgreSQL (H2 in-memory в API).
-#   docker compose -f docker-compose.dev.yml up --build
+#   docker compose -f docker-compose.dev.yml up --build -d
 name: taskmanager-dev
 
 services:
@@ -22,3 +22,20 @@ services:
       api:
         condition: service_healthy
     restart: unless-stopped
+
+  cli:
+    build:
+      context: ./clients/cli
+    environment:
+      TM_API_BASE: http://api:8080/api/v1
+      HOME: /data
+    volumes:
+      - cli-data:/data
+    depends_on:
+      api:
+        condition: service_healthy
+    entrypoint: ["sleep", "infinity"]
+    restart: unless-stopped
+
+volumes:
+  cli-data:
