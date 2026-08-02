@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Task Manager</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=Sora:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+  <div class="atmosphere" aria-hidden="true"></div>
+
+  <header class="topbar">
+    <div class="brand">
+      <span class="brand-mark">TM</span>
+      <div>
+        <strong>Task Manager</strong>
+        <small>Рабочее пространство</small>
+      </div>
+    </div>
+    <div class="topbar-actions" id="userBar" hidden>
+      <span id="userLabel"></span>
+      <button type="button" class="btn ghost" id="logoutBtn">Выйти</button>
+    </div>
+  </header>
+
+  <main>
+    <section id="authView" class="auth-shell">
+      <div class="auth-card">
+        <p class="eyebrow">Task Manager</p>
+        <h1>Войдите, чтобы управлять проектами и командами</h1>
+        <p class="lede">Один аккаунт для Web, Android и CLI.</p>
+
+        <div class="tabs" role="tablist">
+          <button type="button" class="tab active" data-tab="login">Вход</button>
+          <button type="button" class="tab" data-tab="register">Регистрация</button>
+        </div>
+
+        <form id="loginForm" class="form">
+          <label>Email <input name="email" type="email" required placeholder="you@example.com" autocomplete="username" /></label>
+          <label>Пароль <input name="password" type="password" required minlength="6" autocomplete="current-password" /></label>
+          <button class="btn primary" type="submit">Войти</button>
+        </form>
+
+        <form id="registerForm" class="form" hidden>
+          <label>Имя <input name="name" type="text" required maxlength="255" /></label>
+          <label>Email <input name="email" type="email" required autocomplete="username" /></label>
+          <label>Пароль <input name="password" type="password" required minlength="6" autocomplete="new-password" /></label>
+          <button class="btn primary" type="submit">Создать аккаунт</button>
+        </form>
+
+        <details class="api-details">
+          <summary>Настройки API</summary>
+          <label class="api-url">
+            Базовый URL
+            <input id="apiBase" type="url" value="http://localhost:8080/api/v1" />
+          </label>
+        </details>
+        <p class="hint" id="authError" role="alert"></p>
+      </div>
+    </section>
+
+    <section id="appView" hidden>
+      <div id="invitesBanner" class="banner" hidden></div>
+
+      <nav class="workspace-nav" aria-label="Разделы">
+        <button type="button" class="nav-btn active" data-view="projects">Проекты</button>
+        <button type="button" class="nav-btn" data-view="organizations">Организации и команды</button>
+      </nav>
+
+      <div id="projectsView" class="workspace">
+        <aside class="rail panel">
+          <div class="rail-head">
+            <div>
+              <h2>Проекты</h2>
+              <p class="rail-hint">Выберите проект или создайте новый</p>
+            </div>
+            <button type="button" class="btn primary small" id="newProjectBtn">+ Проект</button>
+          </div>
+          <ul id="projectList" class="entity-list"></ul>
+        </aside>
+
+        <section class="panel stage">
+          <div id="emptyState" class="empty">
+            <h3>Проект не выбран</h3>
+            <p>Слева откройте проект — здесь появятся доски, задачи и участники.</p>
+          </div>
+          <div id="projectDetail" hidden>
+            <header class="detail-head">
+              <div>
+                <p class="eyebrow" id="projectMeta"></p>
+                <h2 id="projectTitle"></h2>
+              </div>
+              <div class="row">
+                <button type="button" class="btn small" id="inviteMemberBtn">Пригласить в проект</button>
+                <button type="button" class="btn primary small" id="newBoardBtn">+ Доска</button>
+              </div>
+            </header>
+            <div class="toolbar">
+              <input id="projectSearch" type="search" placeholder="Поиск задач…" />
+              <button type="button" class="btn small" id="runSearch">Найти</button>
+              <button type="button" class="btn ghost small" id="loadNotifs">Уведомления</button>
+            </div>
+            <div id="searchResults" class="search-results" hidden></div>
+            <div id="boardsArea"></div>
+            <div id="projectSidePanel" class="side-grid"></div>
+          </div>
+        </section>
+      </div>
+
+      <div id="orgsView" class="workspace" hidden>
+        <aside class="rail panel">
+          <div class="rail-head">
+            <div>
+              <h2>Организации</h2>
+              <p class="rail-hint">Команды и участники живут здесь</p>
+            </div>
+            <button type="button" class="btn primary small" id="newOrgBtn">+ Организация</button>
+          </div>
+          <ul id="orgList" class="entity-list"></ul>
+        </aside>
+
+        <section class="panel stage">
+          <div id="orgEmpty" class="empty">
+            <h3>Как устроена работа</h3>
+            <ol class="howto">
+              <li>Создайте <strong>организацию</strong> (кнопка слева).</li>
+              <li>Добавьте <strong>участников</strong> по email.</li>
+              <li>Создайте <strong>команды</strong> и распределите людей по ним.</li>
+              <li>Создавайте проекты внутри организации и доски с доступом TEAM_ACL.</li>
+            </ol>
+          </div>
+          <div id="orgDetail" hidden>
+            <header class="detail-head">
+              <div>
+                <p class="eyebrow" id="orgMeta"></p>
+                <h2 id="orgTitle"></h2>
+              </div>
+            </header>
+            <div class="org-grid">
+              <section class="block">
+                <div class="block-head">
+                  <h3>Участники организации</h3>
+                </div>
+                <form id="addOrgMemberForm" class="inline-form">
+                  <label>Email <input name="email" type="email" required placeholder="colleague@example.com" /></label>
+                  <label>Роль
+                    <select name="role">
+                      <option value="MEMBER">MEMBER</option>
+                      <option value="ADMIN">ADMIN</option>
+                      <option value="VIEWER">VIEWER</option>
+                    </select>
+                  </label>
+                  <button class="btn primary small" type="submit">Добавить</button>
+                </form>
+                <ul id="orgMembersList" class="people-list"></ul>
+              </section>
+
+              <section class="block">
+                <div class="block-head">
+                  <h3>Команды</h3>
+                </div>
+                <form id="addTeamForm" class="inline-form">
+                  <label>Название команды <input name="name" type="text" required placeholder="Backend, Design…" /></label>
+                  <button class="btn primary small" type="submit">Создать команду</button>
+                </form>
+                <div id="teamsArea" class="teams-area"></div>
+              </section>
+            </div>
+          </div>
+        </section>
+      </div>
+    </section>
+  </main>
+
+  <dialog id="modal">
+    <form method="dialog" id="modalForm" class="form">
+      <h3 id="modalTitle"></h3>
+      <div id="modalFields"></div>
+      <div class="row">
+        <button type="submit" class="btn primary" value="ok">Сохранить</button>
+        <button type="submit" class="btn ghost" value="cancel">Отмена</button>
+      </div>
+      <p class="hint" id="modalError"></p>
+    </form>
+  </dialog>
+
+  <div id="toast" class="toast" hidden></div>
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>

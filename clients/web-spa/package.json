@@ -1,0 +1,9 @@
+{
+  "name": "task-manager-web-spa",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Browser SPA client for Task Manager API",
+  "scripts": {
+    "start": "npx --yes serve -l 3000 ."
+  }
+}

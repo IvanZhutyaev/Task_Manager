@@ -1,0 +1,23 @@
+databaseChangeLog:
+  - changeSet:
+      id: 002-business-foundation
+      author: taskmanager
+      changes:
+        - addColumn:
+            tableName: projects
+            columns:
+              - column:
+                  name: strict_business_rules
+                  type: BOOLEAN
+                  defaultValueBoolean: false
+                  constraints:
+                    nullable: false
+        - addColumn:
+            tableName: board_columns
+            columns:
+              - column:
+                  name: wip_limit
+                  type: INT
+              - column:
+                  name: mapped_status
+                  type: VARCHAR(20)

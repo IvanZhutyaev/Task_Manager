@@ -1,0 +1,97 @@
+databaseChangeLog:
+  - changeSet:
+      id: 005-task-enrichment
+      author: taskmanager
+      changes:
+        - addColumn:
+            tableName: tasks
+            columns:
+              - column:
+                  name: estimate_hours
+                  type: DECIMAL(10,2)
+              - column:
+                  name: spent_hours
+                  type: DECIMAL(10,2)
+              - column:
+                  name: task_type
+                  type: VARCHAR(20)
+        - createTable:
+            tableName: labels
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: project_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_labels_project
+                    references: projects(id)
+              - column:
+                  name: name
+                  type: VARCHAR(100)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: color
+                  type: VARCHAR(20)
+                  constraints:
+                    nullable: false
+        - addUniqueConstraint:
+            tableName: labels
+            columnNames: project_id, name
+            constraintName: uk_label_project_name
+        - createTable:
+            tableName: task_labels
+            columns:
+              - column:
+                  name: task_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_task_labels_task
+                    references: tasks(id)
+              - column:
+                  name: label_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_task_labels_label
+                    references: labels(id)
+        - addPrimaryKey:
+            tableName: task_labels
+            columnNames: task_id, label_id
+            constraintName: pk_task_labels
+        - createTable:
+            tableName: task_dependencies
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: task_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_deps_task
+                    references: tasks(id)
+              - column:
+                  name: blocker_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_deps_blocker
+                    references: tasks(id)
+        - addUniqueConstraint:
+            tableName: task_dependencies
+            columnNames: task_id, blocker_id
+            constraintName: uk_task_blocker

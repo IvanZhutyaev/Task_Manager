@@ -1,0 +1,56 @@
+databaseChangeLog:
+  - changeSet:
+      id: 011-project-goals
+      author: taskmanager
+      changes:
+        - createTable:
+            tableName: project_goals
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: project_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_goals_project
+                    references: projects(id)
+              - column:
+                  name: title
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: description
+                  type: VARCHAR(2000)
+              - column:
+                  name: created_at
+                  type: TIMESTAMP
+                  constraints:
+                    nullable: false
+        - createTable:
+            tableName: goal_tasks
+            columns:
+              - column:
+                  name: goal_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_goal_tasks_goal
+                    references: project_goals(id)
+              - column:
+                  name: task_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_goal_tasks_task
+                    references: tasks(id)
+        - addPrimaryKey:
+            tableName: goal_tasks
+            columnNames: goal_id, task_id
+            constraintName: pk_goal_tasks

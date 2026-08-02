@@ -1,0 +1,62 @@
+databaseChangeLog:
+  - changeSet:
+      id: 007-project-advanced-settings
+      author: taskmanager
+      changes:
+        - addColumn:
+            tableName: projects
+            columns:
+              - column:
+                  name: custom_workflow_enabled
+                  type: BOOLEAN
+                  defaultValueBoolean: false
+                  constraints:
+                    nullable: false
+              - column:
+                  name: capacity_limit_hours
+                  type: DECIMAL(10,2)
+              - column:
+                  name: sla_warning_days
+                  type: INT
+              - column:
+                  name: sla_escalate_days
+                  type: INT
+              - column:
+                  name: dod_templates_enabled
+                  type: BOOLEAN
+                  defaultValueBoolean: false
+                  constraints:
+                    nullable: false
+              - column:
+                  name: require_approval_for_done
+                  type: BOOLEAN
+                  defaultValueBoolean: false
+                  constraints:
+                    nullable: false
+              - column:
+                  name: priority_queue_rules
+                  type: BOOLEAN
+                  defaultValueBoolean: false
+                  constraints:
+                    nullable: false
+              - column:
+                  name: max_unfinished_sprint_percent
+                  type: INT
+              - column:
+                  name: auto_archive_done_days
+                  type: INT
+              - column:
+                  name: restrict_high_priority_to_owner
+                  type: BOOLEAN
+                  defaultValueBoolean: false
+                  constraints:
+                    nullable: false
+              - column:
+                  name: time_in_status_alerts_days
+                  type: INT
+              - column:
+                  name: block_done_on_open_risks
+                  type: BOOLEAN
+                  defaultValueBoolean: false
+                  constraints:
+                    nullable: false

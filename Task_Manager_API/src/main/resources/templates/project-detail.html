@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Проект — Task Manager</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="/css/app.css">
+</head>
+<body>
+<nav class="navbar navbar-expand-lg navbar-dark tm-nav mb-4">
+    <div class="container">
+        <a class="navbar-brand" href="/projects">Task Manager</a>
+        <button class="btn btn-light btn-sm" onclick="logout()">Выйти</button>
+    </div>
+</nav>
+
+<div class="container">
+    <div class="mb-3">
+        <a href="/projects" class="text-decoration-none">&larr; К проектам</a>
+    </div>
+    <div id="alert"></div>
+    <div id="projectHeader" class="mb-4"></div>
+
+    <div class="row g-2 mb-4 align-items-end">
+        <div class="col-md-6">
+            <label class="form-label small mb-1" for="projectSearch">Поиск задач в проекте</label>
+            <input type="search" class="form-control" id="projectSearch" placeholder="название / описание">
+        </div>
+        <div class="col-md-3">
+            <label class="form-label small mb-1" for="projectSearchStatus">Статус</label>
+            <select class="form-select" id="projectSearchStatus">
+                <option value="">Все</option>
+                <option value="BACKLOG">BACKLOG</option>
+                <option value="IN_PROGRESS">IN_PROGRESS</option>
+                <option value="DONE">DONE</option>
+                <option value="ARCHIVED">ARCHIVED</option>
+            </select>
+        </div>
+        <div class="col-md-3">
+            <button class="btn btn-outline-secondary w-100" onclick="runProjectSearch()">Найти</button>
+        </div>
+    </div>
+    <div id="searchResults" class="mb-4"></div>
+
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2 class="h4 mb-0">Доски</h2>
+        <button class="btn btn-primary btn-sm" id="createBoardBtn" data-bs-toggle="modal" data-bs-target="#createBoardModal">Новая доска</button>
+    </div>
+    <div id="boardsList" class="row g-3 mb-4"></div>
+
+    <div class="row g-4">
+        <div class="col-lg-6">
+            <h2 class="h5">Участники</h2>
+            <div id="membersList" class="mb-3"></div>
+
+            <h3 class="h6">Пригласить по email</h3>
+            <form id="inviteForm" class="row g-2 align-items-end mb-4">
+                <div class="col-md-5">
+                    <label class="form-label" for="inviteEmail">Email</label>
+                    <input type="email" class="form-control" id="inviteEmail" required>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label" for="inviteRole">Роль</label>
+                    <select class="form-select" id="inviteRole">
+                        <option value="EDITOR">EDITOR</option>
+                        <option value="VIEWER">VIEWER</option>
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <button type="submit" class="btn btn-outline-primary w-100" id="inviteBtn">Пригласить</button>
+                </div>
+            </form>
+            <div id="pendingInvites" class="mb-3"></div>
+
+            <details class="mb-3">
+                <summary class="small text-muted">Добавить по userId (legacy)</summary>
+                <form id="addMemberForm" class="row g-2 align-items-end mt-2">
+                    <div class="col-md-4">
+                        <label class="form-label" for="memberUserId">ID пользователя</label>
+                        <input type="number" class="form-control" id="memberUserId" required>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label" for="memberRole">Роль</label>
+                        <select class="form-select" id="memberRole">
+                            <option value="EDITOR">EDITOR</option>
+                            <option value="VIEWER">VIEWER</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <button type="submit" class="btn btn-outline-secondary" id="addMemberBtn">Добавить</button>
+                    </div>
+                </form>
+            </details>
+        </div>
+
+        <div class="col-lg-6">
+            <h2 class="h5">Метки</h2>
+            <div id="labelsList" class="mb-2"></div>
+            <form id="createLabelForm" class="row g-2 align-items-end mb-4">
+                <div class="col-md-5">
+                    <input type="text" class="form-control" id="labelName" placeholder="Название" required>
+                </div>
+                <div class="col-md-3">
+                    <input type="color" class="form-control form-control-color" id="labelColor" value="#0d6efd">
+                </div>
+                <div class="col-md-4">
+                    <button type="submit" class="btn btn-outline-primary w-100" id="createLabelBtn">Добавить метку</button>
+                </div>
+            </form>
+
+            <h2 class="h5">Спринты</h2>
+            <div id="sprintsList" class="mb-2"></div>
+            <form id="createSprintForm" class="row g-2 align-items-end mb-4">
+                <div class="col-md-5">
+                    <input type="text" class="form-control" id="sprintName" placeholder="Название спринта" required>
+                </div>
+                <div class="col-md-3">
+                    <input type="date" class="form-control" id="sprintStart">
+                </div>
+                <div class="col-md-4">
+                    <button type="submit" class="btn btn-outline-primary w-100" id="createSprintBtn">Создать спринт</button>
+                </div>
+            </form>
+
+            <h2 class="h5">Активность</h2>
+            <div id="activityList" class="small"></div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="createBoardModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form id="createBoardForm">
+                <div class="modal-header">
+                    <h5 class="modal-title">Создать доску</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label" for="boardName">Название</label>
+                        <input type="text" class="form-control" id="boardName" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label" for="boardAccessMode">Доступ</label>
+                        <select class="form-select" id="boardAccessMode">
+                            <option value="OPEN" selected>OPEN</option>
+                            <option value="PRIVATE">PRIVATE</option>
+                            <option value="TEAM_ACL">TEAM_ACL</option>
+                        </select>
+                        <div class="form-text">TEAM_ACL доступен только для org-проектов (owner/admin).</div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label" for="boardTeamId">Команда (для TEAM_ACL)</label>
+                        <select class="form-select" id="boardTeamId">
+                            <option value="">— выберите команду —</option>
+                        </select>
+                        <div class="form-text">Список команд подгружается из организации проекта.</div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="submit" class="btn btn-primary">Создать</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="/js/api.js"></script>
+<script>
+    const projectId = window.location.pathname.split('/').pop();
+    let currentRole = null;
+
+    if (requireAuth()) {
+        loadProject();
+    }
+
+    async function loadProject() {
+        try {
+            const project = await apiFetch(`/api/projects/${projectId}`);
+            currentRole = project.currentUserRole;
+            const canWrite = currentRole === 'OWNER' || currentRole === 'EDITOR';
+            const isOwner = currentRole === 'OWNER';
+            document.getElementById('projectHeader').innerHTML = `
+                <h1 class="h3">${escapeHtml(project.name)}</h1>
+                <p class="text-muted">${escapeHtml(project.description || '')}</p>
+                <span class="badge text-bg-primary">${project.currentUserRole}</span>
+                <span class="badge ${project.strictBusinessRules ? 'text-bg-danger' : 'text-bg-success'}">
+                    ${project.strictBusinessRules ? 'STRICT' : 'LEGACY'}
+                </span>
+                ${project.capacityLimitHours != null ? `<span class="badge text-bg-info">capacity ${project.capacityLimitHours}h</span>` : ''}
+                ${project.requireApprovalForDone ? '<span class="badge text-bg-warning">approval</span>' : ''}
+                ${project.priorityQueueRules ? '<span class="badge text-bg-warning">priority-queue</span>' : ''}
+                <span class="text-muted small ms-2">владелец: ${escapeHtml(project.ownerName || '')}</span>
+                ${project.organizationId ? `<span class="badge text-bg-dark ms-1">org #${project.organizationId}</span>` : ''}
+                ${isOwner ? `<button class="btn btn-sm btn-outline-secondary ms-2" type="button" onclick="patchSettings()">Настройки+</button>` : ''}
+                <a class="btn btn-sm btn-outline-secondary ms-1" href="/api/v1/projects/${projectId}/time-report?format=csv" target="_blank">Time CSV</a>
+            `;
+
+            window.projectOrganizationId = project.organizationId || null;
+            await loadOrgTeamsForBoard(project.organizationId);
+            document.getElementById('createBoardBtn').classList.toggle('d-none', !canWrite);
+            document.getElementById('inviteForm').classList.toggle('d-none', !isOwner);
+            document.getElementById('addMemberForm').classList.toggle('d-none', !isOwner);
+            document.getElementById('createLabelForm').classList.toggle('d-none', !canWrite);
+            document.getElementById('createSprintForm').classList.toggle('d-none', !canWrite);
+
+            await Promise.all([
+                loadBoards(),
+                loadMembers(),
+                loadPendingInvites(),
+                loadLabels(),
+                loadSprints(),
+                loadActivity()
+            ]);
+        } catch (err) {
+            showAlert('alert', err.message);
+        }
+    }
+
+    async function loadOrgTeamsForBoard(organizationId) {
+        const select = document.getElementById('boardTeamId');
+        select.innerHTML = '<option value="">— выберите команду —</option>';
+        if (!organizationId) return;
+        try {
+            const teams = await apiFetch(`/api/organizations/${organizationId}/teams`);
+            select.innerHTML += (teams || []).map(t =>
+                `<option value="${t.id}">${escapeHtml(t.name)} (#${t.id})</option>`).join('');
+        } catch (_) { /* ignore */ }
+    }
+
+    async function loadBoards() {
+        const boards = await apiFetch(`/api/projects/${projectId}/boards`);
+        const container = document.getElementById('boardsList');
+        if (boards.length === 0) {
+            container.innerHTML = '<div class="col-12"><div class="alert alert-info">Досок пока нет. Создайте доску или проект с шаблоном Todo/Doing/Done.</div></div>';
+            return;
+        }
+        container.innerHTML = boards.map(b => `
+            <div class="col-md-6 col-lg-4">
+                <div class="card shadow-sm">
+                    <div class="card-body">
+                        <h5 class="card-title">${escapeHtml(b.name)}</h5>
+                        <span class="badge text-bg-secondary mb-2">${escapeHtml(b.accessMode || 'OPEN')}</span>
+                        ${b.teamIds && b.teamIds.length ? `<div class="small text-muted mb-2">teams: ${b.teamIds.join(', ')}</div>` : ''}
+                        <a href="/boards/${b.id}" class="btn btn-sm btn-outline-primary">Открыть доску</a>
+                    </div>
+                </div>
+            </div>
+        `).join('');
+    }
+
+    async function loadMembers() {
+        const members = await apiFetch(`/api/projects/${projectId}/members`);
+        document.getElementById('membersList').innerHTML = `
+            <ul class="list-group">
+                ${members.map(m => `
+                    <li class="list-group-item d-flex justify-content-between">
+                        <span>${escapeHtml(m.name)} (${escapeHtml(m.email)}) <span class="text-muted">id=${m.userId}</span></span>
+                        <span class="badge text-bg-secondary">${m.role}</span>
+                    </li>
+                `).join('')}
+            </ul>
+        `;
+    }
+
+    async function loadPendingInvites() {
+        const el = document.getElementById('pendingInvites');
+        if (currentRole !== 'OWNER') {
+            el.innerHTML = '';
+            return;
+        }
+        try {
+            const invites = await apiFetch(`/api/projects/${projectId}/invitations`);
+            const pending = (invites || []).filter(i => i.status === 'PENDING');
+            if (!pending.length) {
+                el.innerHTML = '<div class="text-muted small">Нет ожидающих приглашений</div>';
+                return;
+            }
+            el.innerHTML = `<div class="small mb-1 text-muted">Ожидают ответа:</div>
+                <ul class="list-group list-group-flush">${pending.map(i => `
+                    <li class="list-group-item px-0 py-1 d-flex justify-content-between">
+                        <span>${escapeHtml(i.email)} → ${i.role}</span>
+                        <span class="badge text-bg-warning">${i.status}</span>
+                    </li>
+                `).join('')}</ul>`;
+        } catch (err) {
+            el.innerHTML = `<div class="text-danger small">${escapeHtml(err.message)}</div>`;
+        }
+    }
+
+    async function loadLabels() {
+        const labels = await apiFetch(`/api/projects/${projectId}/labels`);
+        document.getElementById('labelsList').innerHTML = labels.length
+            ? labels.map(l => `<span class="badge me-1 mb-1" style="background:${escapeHtml(l.color || '#6c757d')}">${escapeHtml(l.name)}</span>`).join('')
+            : '<div class="text-muted small">Меток пока нет</div>';
+    }
+
+    async function loadSprints() {
+        const sprints = await apiFetch(`/api/projects/${projectId}/sprints`);
+        const canWrite = currentRole === 'OWNER' || currentRole === 'EDITOR';
+        document.getElementById('sprintsList').innerHTML = sprints.length
+            ? `<ul class="list-group mb-2">${sprints.map(s => `
+                <li class="list-group-item d-flex justify-content-between align-items-center">
+                    <span>${escapeHtml(s.name)} <span class="badge text-bg-secondary">${s.status}</span></span>
+                    ${canWrite && s.status === 'ACTIVE' ? `<button class="btn btn-sm btn-outline-warning" onclick="closeSprint(${s.id})">Закрыть</button>` : ''}
+                </li>`).join('')}</ul>`
+            : '<div class="text-muted small">Спринтов пока нет</div>';
+    }
+
+    async function loadActivity() {
+        const page = await apiFetch(`/api/projects/${projectId}/activity?size=15`);
+        const items = page.content || page || [];
+        document.getElementById('activityList').innerHTML = items.length
+            ? `<ul class="list-group list-group-flush">${items.map(a => `
+                <li class="list-group-item px-0 py-2">
+                    <strong>${escapeHtml(a.actorName || '')}</strong>: ${escapeHtml(a.action)}
+                    <div class="text-muted">${escapeHtml(a.details || '')}</div>
+                    <div class="text-muted">${a.createdAt ? new Date(a.createdAt).toLocaleString() : ''}</div>
+                </li>`).join('')}</ul>`
+            : '<div class="text-muted">Пока тихо</div>';
+    }
+
+    async function runProjectSearch() {
+        const q = document.getElementById('projectSearch').value.trim();
+        const status = document.getElementById('projectSearchStatus').value;
+        const params = new URLSearchParams();
+        if (q) params.set('q', q);
+        if (status) params.set('status', status);
+        params.set('size', '20');
+        try {
+            const page = await apiFetch(`/api/projects/${projectId}/tasks?${params}`);
+            const tasks = page.content || [];
+            const el = document.getElementById('searchResults');
+            if (!tasks.length) {
+                el.innerHTML = '<div class="alert alert-info py-2">Ничего не найдено</div>';
+                return;
+            }
+            el.innerHTML = `<div class="list-group mb-2">${tasks.map(t => `
+                <div class="list-group-item">
+                    <div class="fw-semibold">#${t.id} ${escapeHtml(t.title)}
+                        ${t.overdue ? '<span class="badge text-bg-danger">OVERDUE</span>' : ''}
+                    </div>
+                    <div class="small text-muted">col=${t.columnId} · ${t.status} · ${t.priority}
+                        ${t.assigneeName ? ' · ' + escapeHtml(t.assigneeName) : ''}
+                    </div>
+                </div>
+            `).join('')}</div>`;
+        } catch (err) {
+            showAlert('alert', err.message);
+        }
+    }
+
+    async function closeSprint(sprintId) {
+        if (!confirm('Закрыть спринт?')) return;
+        try {
+            await apiFetch(`/api/projects/${projectId}/sprints/${sprintId}/close`, {
+                method: 'POST',
+                body: JSON.stringify({ unfinishedAction: 'MOVE_TO_BACKLOG' })
+            });
+            loadSprints();
+            loadActivity();
+        } catch (err) {
+            showAlert('alert', err.message);
+        }
+    }
+
+    async function patchSettings() {
+        const capacity = prompt('Capacity limit hours (пусто = не менять)', '');
+        const body = { priorityQueueRules: true, requireApprovalForDone: true };
+        if (capacity !== null && capacity !== '') body.capacityLimitHours = Number(capacity);
+        try {
+            await apiFetch(`/api/projects/${projectId}/settings`, {
+                method: 'PATCH',
+                body: JSON.stringify(body)
+            });
+            showAlert('alert', 'Настройки обновлены (priority-queue + approval + capacity)', 'success');
+            loadProject();
+        } catch (err) {
+            showAlert('alert', err.message);
+        }
+    }
+
+    document.getElementById('createBoardForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        try {
+            const accessMode = document.getElementById('boardAccessMode').value || 'OPEN';
+            const teamId = document.getElementById('boardTeamId').value;
+            const body = {
+                name: document.getElementById('boardName').value,
+                accessMode
+            };
+            if (accessMode === 'TEAM_ACL' && teamId) {
+                body.teamIds = [Number(teamId)];
+            }
+            await apiFetch(`/api/projects/${projectId}/boards`, {
+                method: 'POST',
+                body: JSON.stringify(body)
+            });
+            bootstrap.Modal.getInstance(document.getElementById('createBoardModal')).hide();
+            document.getElementById('createBoardForm').reset();
+            loadBoards();
+        } catch (err) {
+            showAlert('alert', err.message);
+        }
+    });
+
+    document.getElementById('inviteForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        try {
+            await apiFetch(`/api/projects/${projectId}/invitations`, {
+                method: 'POST',
+                body: JSON.stringify({
+                    email: document.getElementById('inviteEmail').value,
+                    role: document.getElementById('inviteRole').value
+                })
+            });
+            document.getElementById('inviteForm').reset();
+            loadPendingInvites();
+            showAlert('alert', 'Приглашение отправлено', 'success');
+        } catch (err) {
+            showAlert('alert', err.message);
+        }
+    });
+
+    document.getElementById('addMemberForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        try {
+            await apiFetch(`/api/projects/${projectId}/members`, {
+                method: 'POST',
+                body: JSON.stringify({
+                    userId: Number(document.getElementById('memberUserId').value),
+                    role: document.getElementById('memberRole').value
+                })
+            });
+            document.getElementById('addMemberForm').reset();
+            loadMembers();
+        } catch (err) {
+            showAlert('alert', err.message);
+        }
+    });
+
+    document.getElementById('createLabelForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        try {
+            await apiFetch(`/api/projects/${projectId}/labels`, {
+                method: 'POST',
+                body: JSON.stringify({
+                    name: document.getElementById('labelName').value,
+                    color: document.getElementById('labelColor').value
+                })
+            });
+            document.getElementById('labelName').value = '';
+            loadLabels();
+        } catch (err) {
+            showAlert('alert', err.message);
+        }
+    });
+
+    document.getElementById('createSprintForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        try {
+            await apiFetch(`/api/projects/${projectId}/sprints`, {
+                method: 'POST',
+                body: JSON.stringify({
+                    name: document.getElementById('sprintName').value,
+                    startDate: document.getElementById('sprintStart').value || null,
+                    endDate: null
+                })
+            });
+            document.getElementById('createSprintForm').reset();
+            loadSprints();
+            loadActivity();
+        } catch (err) {
+            showAlert('alert', err.message);
+        }
+    });
+</script>
+</body>
+</html>

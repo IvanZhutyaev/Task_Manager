@@ -1,0 +1,599 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Доска — Task Manager</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="/css/app.css">
+</head>
+<body>
+<nav class="navbar navbar-expand-lg navbar-dark tm-nav mb-4">
+    <div class="container-fluid">
+        <a class="navbar-brand" href="/projects">Task Manager</a>
+        <button class="btn btn-light btn-sm" onclick="logout()">Выйти</button>
+    </div>
+</nav>
+
+<div class="container-fluid px-4">
+    <div id="alert"></div>
+    <div id="boardHeader" class="mb-3"></div>
+
+    <div class="row g-2 mb-3 align-items-end">
+        <div class="col-md-2">
+            <label class="form-label small mb-1" for="filterQ">Поиск</label>
+            <input type="text" class="form-control form-control-sm" id="filterQ" placeholder="По названию">
+        </div>
+        <div class="col-md-2">
+            <label class="form-label small mb-1" for="filterPriority">Приоритет</label>
+            <select class="form-select form-select-sm" id="filterPriority">
+                <option value="">Все приоритеты</option>
+                <option value="LOW">LOW</option>
+                <option value="MEDIUM">MEDIUM</option>
+                <option value="HIGH">HIGH</option>
+            </select>
+        </div>
+        <div class="col-md-2">
+            <label class="form-label small mb-1" for="filterStatus">Статус</label>
+            <select class="form-select form-select-sm" id="filterStatus">
+                <option value="">Все статусы</option>
+                <option value="BACKLOG">BACKLOG</option>
+                <option value="IN_PROGRESS">IN_PROGRESS</option>
+                <option value="DONE">DONE</option>
+                <option value="ARCHIVED">ARCHIVED</option>
+            </select>
+        </div>
+        <div class="col-md-2">
+            <label class="form-label small mb-1" for="filterAssignee">Исполнитель</label>
+            <select class="form-select form-select-sm" id="filterAssignee">
+                <option value="">Все</option>
+            </select>
+        </div>
+        <div class="col-md-2">
+            <label class="form-label small mb-1" for="pageSize">Размер страницы</label>
+            <select class="form-select form-select-sm" id="pageSize">
+                <option value="5">5</option>
+                <option value="10">10</option>
+                <option value="20" selected>20</option>
+                <option value="50">50</option>
+            </select>
+        </div>
+        <div class="col-md-2 text-end">
+            <button class="btn btn-sm btn-outline-secondary mb-1" onclick="loadBoard()">Применить</button>
+            <button class="btn btn-sm btn-outline-primary" id="createColumnBtn" data-bs-toggle="modal" data-bs-target="#createColumnModal">Новая колонка</button>
+        </div>
+    </div>
+
+    <div id="kanban" class="kanban-board"></div>
+</div>
+
+<div class="modal fade" id="createColumnModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form id="createColumnForm">
+                <div class="modal-header">
+                    <h5 class="modal-title">Создать колонку</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label" for="columnName">Название</label>
+                        <input type="text" class="form-control" id="columnName" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label" for="columnWip">WIP limit (опционально)</label>
+                        <input type="number" min="1" class="form-control" id="columnWip" placeholder="например 5">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label" for="columnMappedStatus">Mapped status</label>
+                        <select class="form-select" id="columnMappedStatus">
+                            <option value="">—</option>
+                            <option value="BACKLOG">BACKLOG</option>
+                            <option value="IN_PROGRESS">IN_PROGRESS</option>
+                            <option value="DONE">DONE</option>
+                            <option value="ARCHIVED">ARCHIVED</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="submit" class="btn btn-primary">Создать</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="taskModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <form id="taskForm">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="taskModalTitle">Задача</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" id="taskId">
+                    <input type="hidden" id="taskColumnId">
+                    <div class="row g-3">
+                        <div class="col-md-8">
+                            <label class="form-label" for="taskTitle">Название</label>
+                            <input type="text" class="form-control" id="taskTitle" required>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label" for="taskType">Тип</label>
+                            <select class="form-select" id="taskType">
+                                <option value="">—</option>
+                                <option value="BUG">BUG</option>
+                                <option value="FEATURE">FEATURE</option>
+                                <option value="CHORE">CHORE</option>
+                            </select>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label" for="taskDescription">Описание</label>
+                            <textarea class="form-control" id="taskDescription" rows="3"></textarea>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label" for="taskPriority">Приоритет</label>
+                            <select class="form-select" id="taskPriority">
+                                <option value="LOW">LOW</option>
+                                <option value="MEDIUM" selected>MEDIUM</option>
+                                <option value="HIGH">HIGH</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label" for="taskDeadline">Дедлайн</label>
+                            <input type="date" class="form-control" id="taskDeadline">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label" for="taskStatus">Статус</label>
+                            <select class="form-select" id="taskStatus">
+                                <option value="BACKLOG">BACKLOG</option>
+                                <option value="IN_PROGRESS">IN_PROGRESS</option>
+                                <option value="DONE">DONE</option>
+                                <option value="ARCHIVED">ARCHIVED</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label" for="taskAssignee">Исполнитель (участник проекта)</label>
+                            <select class="form-select" id="taskAssignee">
+                                <option value="">Без исполнителя</option>
+                            </select>
+                            <div class="form-text">Назначать можно только участников проекта (включая владельца).</div>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label" for="taskEstimate">Estimate (ч)</label>
+                            <input type="number" step="0.5" min="0" class="form-control" id="taskEstimate">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label" for="taskSpent">Spent (ч)</label>
+                            <input type="number" step="0.5" min="0" class="form-control" id="taskSpent">
+                        </div>
+                    </div>
+
+                    <div id="taskExtras" class="mt-4 d-none">
+                        <hr>
+                        <h6>Комментарии</h6>
+                        <div id="commentsList" class="mb-2"></div>
+                        <div class="input-group mb-3">
+                            <input type="text" class="form-control" id="newComment" placeholder="Новый комментарий">
+                            <button type="button" class="btn btn-outline-primary" id="addCommentBtn">Добавить</button>
+                        </div>
+                        <h6>Чеклист</h6>
+                        <div id="checklistItems" class="mb-2"></div>
+                        <div class="input-group mb-2">
+                            <input type="text" class="form-control" id="newChecklist" placeholder="Пункт чеклиста">
+                            <button type="button" class="btn btn-outline-primary" id="addChecklistBtn">Добавить</button>
+                        </div>
+                        <button type="button" class="btn btn-sm btn-outline-secondary" id="suggestDodBtn">Suggest DoD</button>
+                        <div id="dodPreview" class="mt-2 d-none border rounded p-2 bg-light">
+                            <div class="small fw-semibold mb-1">Предпросмотр DoD</div>
+                            <div id="dodPreviewItems" class="small mb-2"></div>
+                            <button type="button" class="btn btn-sm btn-primary" id="confirmDodBtn">Добавить в чеклист</button>
+                            <button type="button" class="btn btn-sm btn-link" id="cancelDodBtn">Отмена</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-info me-auto d-none" id="historyTaskBtn">История</button>
+                    <button type="button" class="btn btn-outline-danger me-auto d-none" id="deleteTaskBtn">Удалить</button>
+                    <button type="submit" class="btn btn-primary">Сохранить</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="historyModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">История задачи</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="historyContent" class="vstack gap-2"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="/js/api.js"></script>
+<script>
+    const boardId = window.location.pathname.split('/').pop();
+    let columns = [];
+    let members = [];
+    let canWrite = true;
+    let projectId = null;
+    let strictMode = false;
+
+    if (requireAuth()) {
+        initBoard();
+    }
+
+    function fillAssigneeSelects() {
+        const options = '<option value="">Без исполнителя / все</option>' +
+            members.map(m => `<option value="${m.userId}">${escapeHtml(m.name)} (${escapeHtml(m.email)})</option>`).join('');
+        const filter = document.getElementById('filterAssignee');
+        const currentFilter = filter.value;
+        filter.innerHTML = options.replace('Без исполнителя / все', 'Все');
+        filter.value = currentFilter;
+
+        const taskSel = document.getElementById('taskAssignee');
+        const currentTask = taskSel.value;
+        taskSel.innerHTML = '<option value="">Без исполнителя</option>' +
+            members.map(m => `<option value="${m.userId}">${escapeHtml(m.name)} · id=${m.userId}</option>`).join('');
+        taskSel.value = currentTask;
+    }
+
+    async function initBoard() {
+        try {
+            const boardInfo = await apiFetch(`/api/boards/${boardId}`);
+            projectId = boardInfo.projectId;
+            const project = await apiFetch(`/api/projects/${projectId}`);
+            members = await apiFetch(`/api/projects/${projectId}/members`);
+            fillAssigneeSelects();
+            canWrite = project.currentUserRole === 'OWNER' || project.currentUserRole === 'EDITOR';
+            strictMode = !!project.strictBusinessRules;
+            document.getElementById('createColumnBtn').classList.toggle('d-none', !canWrite);
+
+            document.getElementById('boardHeader').innerHTML = `
+                <a href="/projects/${projectId}" class="text-decoration-none">&larr; К проекту</a>
+                <h1 class="h3 mt-2">${escapeHtml(boardInfo.name)}</h1>
+                <span class="badge ${strictMode ? 'text-bg-danger' : 'text-bg-success'}">${strictMode ? 'STRICT' : 'LEGACY'}</span>
+                <span class="badge text-bg-secondary">${escapeHtml(boardInfo.accessMode || 'OPEN')}</span>
+            `;
+            await loadBoard();
+            subscribeBoardEvents();
+        } catch (err) {
+            showAlert('alert', err.message);
+        }
+    }
+
+    function subscribeBoardEvents() {
+        const token = getToken();
+        if (!token) return;
+        const url = `/api/v1/boards/${boardId}/events?access_token=${encodeURIComponent(token)}`;
+        try {
+            const source = new EventSource(url);
+            source.addEventListener('board', () => {
+                loadBoard().catch(() => {});
+            });
+            source.onerror = () => {
+                // keep connection; browser will retry
+            };
+        } catch (e) {
+            // EventSource unavailable — ignore
+        }
+    }
+
+    async function loadBoard() {
+        columns = await apiFetch(`/api/boards/${boardId}/columns`);
+        const kanban = document.getElementById('kanban');
+        const q = document.getElementById('filterQ').value;
+        const priority = document.getElementById('filterPriority').value;
+        const status = document.getElementById('filterStatus').value;
+        const assignee = document.getElementById('filterAssignee').value;
+        const size = document.getElementById('pageSize').value;
+
+        const columnHtml = [];
+        for (const column of columns) {
+            const params = new URLSearchParams();
+            if (q) params.set('q', q);
+            if (priority) params.set('priority', priority);
+            if (status) params.set('status', status);
+            if (assignee) params.set('assigneeId', assignee);
+            params.set('size', size);
+            const query = params.toString() ? '?' + params.toString() : '';
+            const pageResponse = await apiFetch(`/api/columns/${column.id}/tasks${query}`);
+            const tasks = pageResponse.content || [];
+            const wipLabel = column.wipLimit != null ? ` · WIP ${column.wipLimit}` : '';
+            const mapLabel = column.mappedStatus ? ` · → ${column.mappedStatus}` : '';
+
+            columnHtml.push(`
+                <div class="kanban-column p-3">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h2 class="h6 mb-0">${escapeHtml(column.name)}<span class="text-muted fw-normal">${wipLabel}${mapLabel}</span></h2>
+                        ${canWrite ? `<button class="btn btn-sm btn-outline-primary" onclick="openCreateTask(${column.id})">+</button>` : ''}
+                    </div>
+                    <div class="d-flex flex-column gap-2">
+                        ${tasks.map(task => renderTaskCard(task, column.id)).join('')}
+                    </div>
+                    ${pageResponse.totalElements > tasks.length ? `<div class="small text-muted mt-2">Показано ${tasks.length} из ${pageResponse.totalElements}</div>` : ''}
+                </div>
+            `);
+        }
+        kanban.innerHTML = columnHtml.join('');
+    }
+
+    function renderTaskCard(task, columnId) {
+        const moveOptions = columns.map(c =>
+            `<option value="${c.id}" ${c.id === columnId ? 'selected' : ''}>${escapeHtml(c.name)}</option>`
+        ).join('');
+
+        return `
+            <div class="card task-card priority-${task.priority} mb-0">
+                <div class="card-body p-3">
+                    <div class="fw-semibold">${escapeHtml(task.title)}
+                        ${task.overdue ? '<span class="badge text-bg-danger ms-1">OVERDUE</span>' : ''}
+                    </div>
+                    <div class="small text-muted">${escapeHtml(task.description || '')}</div>
+                    <div class="small mt-2">
+                        <span class="badge text-bg-light">${task.priority}</span>
+                        <span class="badge text-bg-secondary ms-1">${task.status || 'BACKLOG'}</span>
+                        ${task.taskType ? `<span class="badge text-bg-info ms-1">${task.taskType}</span>` : ''}
+                        ${task.assigneeName ? `<span class="ms-1">${escapeHtml(task.assigneeName)}</span>` : ''}
+                    </div>
+                    ${canWrite ? `
+                        <div class="mt-2 d-flex gap-1 flex-wrap">
+                            <button class="btn btn-sm btn-outline-secondary" onclick="openEditTask(${task.id})">Изменить</button>
+                            <button class="btn btn-sm btn-outline-info" onclick="openHistory(${task.id})">История</button>
+                            <select class="form-select form-select-sm" id="move-${task.id}" style="max-width: 120px;">${moveOptions}</select>
+                            <button class="btn btn-sm btn-outline-primary" onclick="moveTask(${task.id})">→</button>
+                        </div>
+                    ` : ''}
+                </div>
+            </div>
+        `;
+    }
+
+    async function moveTask(taskId) {
+        const select = document.getElementById(`move-${taskId}`);
+        try {
+            await apiFetch(`/api/tasks/${taskId}/move`, {
+                method: 'PATCH',
+                body: JSON.stringify({ columnId: Number(select.value) })
+            });
+            loadBoard();
+        } catch (err) {
+            showAlert('alert', err.message);
+        }
+    }
+
+    function openCreateTask(columnId) {
+        document.getElementById('taskForm').reset();
+        document.getElementById('taskId').value = '';
+        document.getElementById('taskColumnId').value = columnId;
+        document.getElementById('taskStatus').value = 'BACKLOG';
+        document.getElementById('taskModalTitle').textContent = 'Новая задача';
+        document.getElementById('historyTaskBtn').classList.add('d-none');
+        document.getElementById('deleteTaskBtn').classList.add('d-none');
+        document.getElementById('taskExtras').classList.add('d-none');
+        fillAssigneeSelects();
+        new bootstrap.Modal(document.getElementById('taskModal')).show();
+    }
+
+    async function openEditTask(taskId) {
+        const task = await apiFetch(`/api/tasks/${taskId}`);
+        fillAssigneeSelects();
+        document.getElementById('taskId').value = task.id;
+        document.getElementById('taskColumnId').value = task.columnId;
+        document.getElementById('taskTitle').value = task.title;
+        document.getElementById('taskDescription').value = task.description || '';
+        document.getElementById('taskPriority').value = task.priority;
+        document.getElementById('taskStatus').value = task.status || 'BACKLOG';
+        document.getElementById('taskDeadline').value = task.deadline || '';
+        document.getElementById('taskAssignee').value = task.assigneeId || '';
+        document.getElementById('taskType').value = task.taskType || '';
+        document.getElementById('taskEstimate').value = task.estimateHours != null ? task.estimateHours : '';
+        document.getElementById('taskSpent').value = task.spentHours != null ? task.spentHours : '';
+        document.getElementById('taskModalTitle').textContent = 'Редактировать задачу';
+        document.getElementById('historyTaskBtn').classList.remove('d-none');
+        document.getElementById('deleteTaskBtn').classList.remove('d-none');
+        document.getElementById('taskExtras').classList.remove('d-none');
+        await Promise.all([loadComments(taskId), loadChecklist(taskId)]);
+        new bootstrap.Modal(document.getElementById('taskModal')).show();
+    }
+
+    async function loadComments(taskId) {
+        const comments = await apiFetch(`/api/tasks/${taskId}/comments`);
+        document.getElementById('commentsList').innerHTML = comments.length
+            ? comments.map(c => `<div class="border rounded p-2 mb-1 small"><strong>${escapeHtml(c.authorName || '')}</strong>: ${escapeHtml(c.body || c.text || '')}</div>`).join('')
+            : '<div class="text-muted small">Комментариев нет</div>';
+    }
+
+    async function loadChecklist(taskId) {
+        const items = await apiFetch(`/api/tasks/${taskId}/checklist`);
+        document.getElementById('checklistItems').innerHTML = items.length
+            ? items.map(i => `
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" ${i.done ? 'checked' : ''}
+                           onchange="toggleChecklist(${i.id}, this.checked, ${JSON.stringify(i.title || '')})">
+                    <label class="form-check-label">${escapeHtml(i.title || '')}</label>
+                </div>`).join('')
+            : '<div class="text-muted small">Чеклист пуст</div>';
+    }
+
+    document.getElementById('addCommentBtn').addEventListener('click', async () => {
+        const taskId = document.getElementById('taskId').value;
+        const body = document.getElementById('newComment').value.trim();
+        if (!taskId || !body) return;
+        try {
+            await apiFetch(`/api/tasks/${taskId}/comments`, { method: 'POST', body: JSON.stringify({ body }) });
+            document.getElementById('newComment').value = '';
+            loadComments(taskId);
+        } catch (err) {
+            showAlert('alert', err.message);
+        }
+    });
+
+    document.getElementById('addChecklistBtn').addEventListener('click', async () => {
+        const taskId = document.getElementById('taskId').value;
+        const title = document.getElementById('newChecklist').value.trim();
+        if (!taskId || !title) return;
+        try {
+            await apiFetch(`/api/tasks/${taskId}/checklist`, { method: 'POST', body: JSON.stringify({ title }) });
+            document.getElementById('newChecklist').value = '';
+            loadChecklist(taskId);
+        } catch (err) {
+            showAlert('alert', err.message);
+        }
+    });
+
+    let pendingDodItems = [];
+
+    document.getElementById('suggestDodBtn').addEventListener('click', async () => {
+        const taskId = document.getElementById('taskId').value;
+        if (!taskId) return;
+        try {
+            const suggestion = await apiFetch(`/api/tasks/${taskId}/ai/suggest-dod`, { method: 'POST', body: '{}' });
+            pendingDodItems = suggestion.items || [];
+            const box = document.getElementById('dodPreview');
+            document.getElementById('dodPreviewItems').innerHTML = pendingDodItems.length
+                ? pendingDodItems.map(i => `<div>• ${escapeHtml(i.title)}</div>`).join('')
+                : '<div class="text-muted">Нет предложений</div>';
+            box.classList.remove('d-none');
+        } catch (err) {
+            showAlert('alert', err.message);
+        }
+    });
+
+    document.getElementById('cancelDodBtn').addEventListener('click', () => {
+        pendingDodItems = [];
+        document.getElementById('dodPreview').classList.add('d-none');
+    });
+
+    document.getElementById('confirmDodBtn').addEventListener('click', async () => {
+        const taskId = document.getElementById('taskId').value;
+        if (!taskId || !pendingDodItems.length) return;
+        try {
+            await apiFetch(`/api/tasks/${taskId}/checklist/bulk`, {
+                method: 'POST',
+                body: JSON.stringify(pendingDodItems.map(i => ({ title: i.title, done: false })))
+            });
+            pendingDodItems = [];
+            document.getElementById('dodPreview').classList.add('d-none');
+            loadChecklist(taskId);
+        } catch (err) {
+            showAlert('alert', err.message);
+        }
+    });
+
+    async function toggleChecklist(itemId, done, title) {
+        try {
+            await apiFetch(`/api/tasks/checklist/${itemId}`, {
+                method: 'PUT',
+                body: JSON.stringify({ title, done })
+            });
+        } catch (err) {
+            showAlert('alert', err.message);
+            const taskId = document.getElementById('taskId').value;
+            if (taskId) loadChecklist(taskId);
+        }
+    }
+
+    document.getElementById('createColumnForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const wip = document.getElementById('columnWip').value;
+        const mapped = document.getElementById('columnMappedStatus').value;
+        try {
+            await apiFetch(`/api/boards/${boardId}/columns`, {
+                method: 'POST',
+                body: JSON.stringify({
+                    name: document.getElementById('columnName').value,
+                    wipLimit: wip ? Number(wip) : null,
+                    mappedStatus: mapped || null
+                })
+            });
+            bootstrap.Modal.getInstance(document.getElementById('createColumnModal')).hide();
+            document.getElementById('createColumnForm').reset();
+            loadBoard();
+        } catch (err) {
+            showAlert('alert', err.message);
+        }
+    });
+
+    document.getElementById('taskForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const estimate = document.getElementById('taskEstimate').value;
+        const spent = document.getElementById('taskSpent').value;
+        const taskType = document.getElementById('taskType').value;
+        const payload = {
+            title: document.getElementById('taskTitle').value,
+            description: document.getElementById('taskDescription').value,
+            priority: document.getElementById('taskPriority').value,
+            status: document.getElementById('taskStatus').value,
+            deadline: document.getElementById('taskDeadline').value || null,
+            assigneeId: document.getElementById('taskAssignee').value ? Number(document.getElementById('taskAssignee').value) : null,
+            estimateHours: estimate !== '' ? Number(estimate) : null,
+            spentHours: spent !== '' ? Number(spent) : null,
+            taskType: taskType || null,
+            sprintId: null,
+            labelIds: null
+        };
+        const taskId = document.getElementById('taskId').value;
+        const columnId = document.getElementById('taskColumnId').value;
+        try {
+            if (taskId) {
+                await apiFetch(`/api/tasks/${taskId}`, { method: 'PUT', body: JSON.stringify(payload) });
+            } else {
+                await apiFetch(`/api/columns/${columnId}/tasks`, { method: 'POST', body: JSON.stringify(payload) });
+            }
+            bootstrap.Modal.getInstance(document.getElementById('taskModal')).hide();
+            loadBoard();
+        } catch (err) {
+            showAlert('alert', err.message);
+        }
+    });
+
+    async function openHistory(taskId) {
+        try {
+            const history = await apiFetch(`/api/tasks/${taskId}/history`);
+            const content = document.getElementById('historyContent');
+            content.innerHTML = history.length ? history.map(entry => `
+                <div class="border rounded p-2">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <strong>${escapeHtml(entry.action)}</strong>
+                        <small class="text-muted">${new Date(entry.createdAt).toLocaleString()}</small>
+                    </div>
+                    <div class="small text-muted">${escapeHtml(entry.details || '')}</div>
+                    ${entry.changedByName ? `<div class="small text-muted">Изменил: ${escapeHtml(entry.changedByName)}</div>` : ''}
+                </div>
+            `).join('') : '<div class="text-muted">История отсутствует</div>';
+            new bootstrap.Modal(document.getElementById('historyModal')).show();
+        } catch (err) {
+            showAlert('alert', err.message);
+        }
+    }
+
+    document.getElementById('historyTaskBtn').addEventListener('click', () => {
+        const taskId = document.getElementById('taskId').value;
+        if (taskId) {
+            openHistory(taskId);
+        }
+    });
+
+    document.getElementById('deleteTaskBtn').addEventListener('click', async () => {
+        const taskId = document.getElementById('taskId').value;
+        if (!taskId || !confirm('Удалить задачу?')) return;
+        try {
+            await apiFetch(`/api/tasks/${taskId}`, { method: 'DELETE' });
+            bootstrap.Modal.getInstance(document.getElementById('taskModal')).hide();
+            loadBoard();
+        } catch (err) {
+            showAlert('alert', err.message);
+        }
+    });
+</script>
+</body>
+</html>

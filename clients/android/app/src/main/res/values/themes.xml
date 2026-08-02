@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Theme.TaskManager" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+        <item name="colorPrimary">@color/teal</item>
+        <item name="colorPrimaryVariant">@color/teal_dark</item>
+        <item name="colorOnPrimary">@color/white</item>
+        <item name="colorSecondary">@color/amber</item>
+        <item name="colorOnSecondary">@color/white</item>
+        <item name="android:statusBarColor">@color/ink</item>
+        <item name="android:navigationBarColor">@color/surface</item>
+        <item name="android:windowBackground">@color/bg</item>
+        <item name="android:textColorPrimary">@color/ink</item>
+        <item name="android:textColorSecondary">@color/muted</item>
+        <item name="materialButtonStyle">@style/Widget.TM.Button</item>
+    </style>
+
+    <style name="Widget.TM.Button" parent="Widget.MaterialComponents.Button">
+        <item name="cornerRadius">14dp</item>
+        <item name="android:letterSpacing">0.01</item>
+        <item name="android:minHeight">48dp</item>
+    </style>
+
+    <style name="Widget.TM.Button.Outlined" parent="Widget.MaterialComponents.Button.OutlinedButton">
+        <item name="cornerRadius">14dp</item>
+        <item name="strokeColor">@color/teal</item>
+        <item name="android:textColor">@color/teal_dark</item>
+        <item name="android:minHeight">48dp</item>
+    </style>
+
+    <style name="Widget.TM.Button.Text" parent="Widget.MaterialComponents.Button.TextButton">
+        <item name="android:textColor">@color/teal_dark</item>
+    </style>
+
+    <style name="Text.TM.Title" parent="TextAppearance.MaterialComponents.Headline5">
+        <item name="android:textColor">@color/ink</item>
+        <item name="android:textStyle">bold</item>
+    </style>
+
+    <style name="Text.TM.Section" parent="TextAppearance.MaterialComponents.Subtitle1">
+        <item name="android:textColor">@color/ink</item>
+        <item name="android:textStyle">bold</item>
+    </style>
+</resources>

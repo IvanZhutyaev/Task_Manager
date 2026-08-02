@@ -1,0 +1,49 @@
+databaseChangeLog:
+  - changeSet:
+      id: 016-board-access
+      author: taskmanager
+      changes:
+        - addColumn:
+            tableName: boards
+            columns:
+              - column:
+                  name: access_mode
+                  type: VARCHAR(20)
+                  defaultValue: OPEN
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_by_id
+                  type: BIGINT
+                  constraints:
+                    nullable: true
+                    foreignKeyName: fk_board_created_by
+                    references: users(id)
+        - createTable:
+            tableName: board_teams
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: board_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_board_team_board
+                    references: boards(id)
+              - column:
+                  name: team_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_board_team_team
+                    references: teams(id)
+        - addUniqueConstraint:
+            tableName: board_teams
+            columnNames: board_id, team_id
+            constraintName: uk_board_team

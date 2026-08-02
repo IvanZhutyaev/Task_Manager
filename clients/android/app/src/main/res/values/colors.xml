@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="ink">#0F172A</color>
+    <color name="ink_soft">#334155</color>
+    <color name="muted">#64748B</color>
+    <color name="line">#E2E8F0</color>
+    <color name="bg">#F1F5F9</color>
+    <color name="surface">#FFFFFF</color>
+    <color name="accent">#0F766E</color>
+    <color name="teal">#0F766E</color>
+    <color name="teal_dark">#115E59</color>
+    <color name="teal_soft">#CCFBF1</color>
+    <color name="amber">#B45309</color>
+    <color name="rose">#BE123C</color>
+    <color name="white">#FFFFFF</color>
+</resources>

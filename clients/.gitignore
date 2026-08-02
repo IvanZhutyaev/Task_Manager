@@ -1,0 +1,11 @@
+# Ignore local IDE / build artifacts for demo clients
+android/.gradle/
+android/.idea/
+android/local.properties
+android/app/build/
+android/build/
+android/*.iml
+web-spa/node_modules/
+**/__pycache__/
+*.pyc
+.DS_Store

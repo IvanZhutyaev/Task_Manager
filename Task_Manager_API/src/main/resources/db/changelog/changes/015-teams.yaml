@@ -1,0 +1,64 @@
+databaseChangeLog:
+  - changeSet:
+      id: 015-teams
+      author: taskmanager
+      changes:
+        - createTable:
+            tableName: teams
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: organization_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_team_org
+                    references: organizations(id)
+              - column:
+                  name: name
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: TIMESTAMP
+                  constraints:
+                    nullable: false
+        - addUniqueConstraint:
+            tableName: teams
+            columnNames: organization_id, name
+            constraintName: uk_team_org_name
+        - createTable:
+            tableName: team_members
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: team_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_team_member_team
+                    references: teams(id)
+              - column:
+                  name: user_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_team_member_user
+                    references: users(id)
+        - addUniqueConstraint:
+            tableName: team_members
+            columnNames: team_id, user_id
+            constraintName: uk_team_member

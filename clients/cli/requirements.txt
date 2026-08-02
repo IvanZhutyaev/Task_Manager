@@ -1,0 +1,2 @@
+# Optional: CLI uses only Python stdlib (urllib).
+# Keep this file so pip install -r requirements.txt is a no-op / future deps.
