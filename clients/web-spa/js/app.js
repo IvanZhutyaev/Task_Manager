@@ -175,16 +175,23 @@ document.querySelectorAll('.nav-btn').forEach((btn) => {
   btn.addEventListener('click', () => setView(btn.dataset.view));
 });
 
-document.querySelectorAll('.tab').forEach((tab) => {
-  tab.addEventListener('click', () => {
-    document.querySelectorAll('.tab').forEach((t) => t.classList.remove('active'));
-    tab.classList.add('active');
-    const isLogin = tab.dataset.tab === 'login';
-    els.loginForm.hidden = !isLogin;
-    els.registerForm.hidden = isLogin;
-    els.authError.textContent = '';
+function setAuthTab(whichTab) {
+  const isLogin = whichTab === 'login';
+  document.querySelectorAll('.tab').forEach((t) => {
+    t.classList.toggle('active', t.dataset.tab === whichTab);
   });
+  els.loginForm.classList.toggle('is-hidden', !isLogin);
+  els.registerForm.classList.toggle('is-hidden', isLogin);
+  els.loginForm.hidden = !isLogin;
+  els.registerForm.hidden = isLogin;
+  els.registerForm.setAttribute('aria-hidden', isLogin ? 'true' : 'false');
+  els.authError.textContent = '';
+}
+
+document.querySelectorAll('.tab').forEach((tab) => {
+  tab.addEventListener('click', () => setAuthTab(tab.dataset.tab));
 });
+setAuthTab('login');
 
 async function afterAuth(data) {
   setToken(data.token);

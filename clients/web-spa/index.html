@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=Sora:wght@400;500;600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="css/styles.css" />
+  <link rel="stylesheet" href="css/styles.css?v=3" />
 </head>
 <body>
   <div class="atmosphere" aria-hidden="true"></div>
@@ -38,13 +38,13 @@
           <button type="button" class="tab" data-tab="register">Регистрация</button>
         </div>
 
-        <form id="loginForm" class="form">
+        <form id="loginForm" class="form auth-pane" data-pane="login">
           <label>Email <input name="email" type="email" required placeholder="you@example.com" autocomplete="username" /></label>
           <label>Пароль <input name="password" type="password" required minlength="6" autocomplete="current-password" /></label>
           <button class="btn primary" type="submit">Войти</button>
         </form>
 
-        <form id="registerForm" class="form" hidden>
+        <form id="registerForm" class="form auth-pane is-hidden" data-pane="register" aria-hidden="true">
           <label>Имя <input name="name" type="text" required maxlength="255" /></label>
           <label>Email <input name="email" type="email" required autocomplete="username" /></label>
           <label>Пароль <input name="password" type="password" required minlength="6" autocomplete="new-password" /></label>
@@ -172,6 +172,6 @@
   </dialog>
 
   <div id="toast" class="toast" hidden></div>
-  <script type="module" src="js/app.js"></script>
+  <script type="module" src="js/app.js?v=3"></script>
 </body>
 </html>

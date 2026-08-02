@@ -154,6 +154,12 @@ h3 { font-size: 1.15rem; }
 .btn.small { padding: 0.4rem 0.8rem; font-size: 0.88rem; }
 
 .form, .inline-form { display: grid; gap: 0.8rem; }
+/* .form { display:grid } иначе перебивает атрибут hidden */
+[hidden],
+.auth-pane.is-hidden,
+.is-hidden {
+  display: none !important;
+}
 .inline-form {
   grid-template-columns: 1.4fr 0.9fr auto;
   align-items: end;
