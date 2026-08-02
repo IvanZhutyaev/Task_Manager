@@ -8,18 +8,25 @@
     <link rel="stylesheet" href="/css/app.css">
 </head>
 <body>
-<nav class="navbar navbar-expand-lg navbar-dark tm-nav mb-4">
-    <div class="container-fluid">
-        <a class="navbar-brand" href="/projects">Task Manager</a>
+<nav class="navbar navbar-expand-lg tm-nav">
+    <div class="container-fluid px-4">
+        <a class="brand-lockup" href="/projects">
+            <span class="brand-mark">TM</span>
+            <div>
+                <strong>Task Manager</strong>
+                <small>Доска</small>
+            </div>
+        </a>
         <button class="btn btn-light btn-sm" onclick="logout()">Выйти</button>
     </div>
 </nav>
 
-<div class="container-fluid px-4">
+<div class="container-fluid px-4 pb-4">
     <div id="alert"></div>
-    <div id="boardHeader" class="mb-3"></div>
+    <div id="boardHeader" class="page-hero mb-3"></div>
 
-    <div class="row g-2 mb-3 align-items-end">
+    <div class="soft-panel mb-3">
+    <div class="row g-2 align-items-end">
         <div class="col-md-2">
             <label class="form-label small mb-1" for="filterQ">Поиск</label>
             <input type="text" class="form-control form-control-sm" id="filterQ" placeholder="По названию">
@@ -62,6 +69,7 @@
             <button class="btn btn-sm btn-outline-secondary mb-1" onclick="loadBoard()">Применить</button>
             <button class="btn btn-sm btn-outline-primary" id="createColumnBtn" data-bs-toggle="modal" data-bs-target="#createColumnModal">Новая колонка</button>
         </div>
+    </div>
     </div>
 
     <div id="kanban" class="kanban-board"></div>
@@ -258,10 +266,15 @@
             document.getElementById('createColumnBtn').classList.toggle('d-none', !canWrite);
 
             document.getElementById('boardHeader').innerHTML = `
-                <a href="/projects/${projectId}" class="text-decoration-none">&larr; К проекту</a>
-                <h1 class="h3 mt-2">${escapeHtml(boardInfo.name)}</h1>
-                <span class="badge ${strictMode ? 'text-bg-danger' : 'text-bg-success'}">${strictMode ? 'STRICT' : 'LEGACY'}</span>
-                <span class="badge text-bg-secondary">${escapeHtml(boardInfo.accessMode || 'OPEN')}</span>
+                <div>
+                    <a href="/projects/${projectId}" class="back-link">&larr; К проекту</a>
+                    <div class="eyebrow">Доска</div>
+                    <h1 class="h3 mb-2">${escapeHtml(boardInfo.name)}</h1>
+                    <div class="d-flex flex-wrap gap-1">
+                        <span class="badge ${strictMode ? 'text-bg-danger' : 'text-bg-success'}">${strictMode ? 'STRICT' : 'LEGACY'}</span>
+                        <span class="badge text-bg-secondary">${escapeHtml(boardInfo.accessMode || 'OPEN')}</span>
+                    </div>
+                </div>
             `;
             await loadBoard();
             subscribeBoardEvents();
@@ -311,9 +324,9 @@
             const mapLabel = column.mappedStatus ? ` · → ${column.mappedStatus}` : '';
 
             columnHtml.push(`
-                <div class="kanban-column p-3">
-                    <div class="d-flex justify-content-between align-items-center mb-3">
-                        <h2 class="h6 mb-0">${escapeHtml(column.name)}<span class="text-muted fw-normal">${wipLabel}${mapLabel}</span></h2>
+                <div class="kanban-column">
+                    <div class="column-head">
+                        <strong>${escapeHtml(column.name)}<span class="text-muted fw-normal">${wipLabel}${mapLabel}</span></strong>
                         ${canWrite ? `<button class="btn btn-sm btn-outline-primary" onclick="openCreateTask(${column.id})">+</button>` : ''}
                     </div>
                     <div class="d-flex flex-column gap-2">

@@ -8,11 +8,17 @@
     <link rel="stylesheet" href="/css/app.css">
 </head>
 <body>
-<nav class="navbar navbar-expand-lg navbar-dark tm-nav mb-4">
+<nav class="navbar navbar-expand-lg tm-nav">
     <div class="container">
-        <a class="navbar-brand" href="/projects">Task Manager</a>
+        <a class="brand-lockup" href="/projects">
+            <span class="brand-mark">TM</span>
+            <div>
+                <strong>Task Manager</strong>
+                <small>Demo UI</small>
+            </div>
+        </a>
         <div class="d-flex gap-2 align-items-center">
-            <span id="userLabel" class="text-white-50 small"></span>
+            <span id="userLabel" class="small"></span>
             <a class="btn btn-outline-light btn-sm" href="/swagger-ui.html" target="_blank">Swagger</a>
             <button class="btn btn-light btn-sm" onclick="logout()">Выйти</button>
         </div>
@@ -20,9 +26,9 @@
 </nav>
 
 <div class="container pb-5">
-    <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+    <div class="page-hero">
         <div>
-            <div class="text-muted small text-uppercase fw-semibold">Рабочее пространство</div>
+            <div class="eyebrow">Рабочее пространство</div>
             <h1 class="h3 mb-0">Проекты и организации</h1>
         </div>
         <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createProjectModal">Новый проект</button>
@@ -100,7 +106,7 @@
         </div>
     </div>
 
-    <h2 class="h5 mb-3">Мои проекты</h2>
+    <h2 class="page-section-title">Мои проекты</h2>
     <div id="projectsList" class="row g-3"></div>
 </div>
 
@@ -359,15 +365,15 @@
                     : 'Личный';
                 return `
                 <div class="col-md-6 col-xl-4">
-                    <div class="tm-card h-100">
+                    <div class="tm-card project-tile h-100">
                         <div class="card-body">
                             <h5 class="card-title">${escapeHtml(p.name)}</h5>
                             <p class="card-text text-muted">${escapeHtml(p.description || 'Без описания')}</p>
                             <span class="badge badge-role me-1">${escapeHtml(p.currentUserRole || '')}</span>
-                            <span class="badge text-bg-light border">${escapeHtml(orgName)}</span>
+                            <span class="badge text-bg-light">${escapeHtml(orgName)}</span>
                         </div>
-                        <div class="card-footer bg-transparent border-0 pt-0 pb-3 px-3">
-                            <a href="/projects/${p.id}" class="btn btn-sm btn-outline-primary">Открыть</a>
+                        <div class="card-footer pt-0 pb-3 px-3 border-0">
+                            <a href="/projects/${p.id}" class="btn btn-sm btn-outline-primary">Открыть проект</a>
                         </div>
                     </div>
                 </div>`;

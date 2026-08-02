@@ -8,123 +8,147 @@
     <link rel="stylesheet" href="/css/app.css">
 </head>
 <body>
-<nav class="navbar navbar-expand-lg navbar-dark tm-nav mb-4">
+<nav class="navbar navbar-expand-lg tm-nav">
     <div class="container">
-        <a class="navbar-brand" href="/projects">Task Manager</a>
+        <a class="brand-lockup" href="/projects">
+            <span class="brand-mark">TM</span>
+            <div>
+                <strong>Task Manager</strong>
+                <small>Demo UI</small>
+            </div>
+        </a>
         <button class="btn btn-light btn-sm" onclick="logout()">Выйти</button>
     </div>
 </nav>
 
-<div class="container">
-    <div class="mb-3">
-        <a href="/projects" class="text-decoration-none">&larr; К проектам</a>
-    </div>
+<div class="container pb-5">
+    <a href="/projects" class="back-link">&larr; К проектам</a>
     <div id="alert"></div>
-    <div id="projectHeader" class="mb-4"></div>
+    <div id="projectHeader" class="page-hero mb-4"></div>
 
-    <div class="row g-2 mb-4 align-items-end">
-        <div class="col-md-6">
-            <label class="form-label small mb-1" for="projectSearch">Поиск задач в проекте</label>
-            <input type="search" class="form-control" id="projectSearch" placeholder="название / описание">
+    <div class="soft-panel mb-4">
+        <div class="row g-2 align-items-end">
+            <div class="col-md-6">
+                <label class="form-label small mb-1" for="projectSearch">Поиск задач в проекте</label>
+                <input type="search" class="form-control" id="projectSearch" placeholder="название / описание">
+            </div>
+            <div class="col-md-3">
+                <label class="form-label small mb-1" for="projectSearchStatus">Статус</label>
+                <select class="form-select" id="projectSearchStatus">
+                    <option value="">Все</option>
+                    <option value="BACKLOG">BACKLOG</option>
+                    <option value="IN_PROGRESS">IN_PROGRESS</option>
+                    <option value="DONE">DONE</option>
+                    <option value="ARCHIVED">ARCHIVED</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <button class="btn btn-outline-secondary w-100" onclick="runProjectSearch()">Найти</button>
+            </div>
         </div>
-        <div class="col-md-3">
-            <label class="form-label small mb-1" for="projectSearchStatus">Статус</label>
-            <select class="form-select" id="projectSearchStatus">
-                <option value="">Все</option>
-                <option value="BACKLOG">BACKLOG</option>
-                <option value="IN_PROGRESS">IN_PROGRESS</option>
-                <option value="DONE">DONE</option>
-                <option value="ARCHIVED">ARCHIVED</option>
-            </select>
-        </div>
-        <div class="col-md-3">
-            <button class="btn btn-outline-secondary w-100" onclick="runProjectSearch()">Найти</button>
-        </div>
+        <div id="searchResults" class="mt-3"></div>
     </div>
-    <div id="searchResults" class="mb-4"></div>
 
-    <div class="d-flex justify-content-between align-items-center mb-3">
-        <h2 class="h4 mb-0">Доски</h2>
+    <div class="page-hero">
+        <div>
+            <div class="eyebrow">Канбан</div>
+            <h2 class="h4 mb-0">Доски</h2>
+        </div>
         <button class="btn btn-primary btn-sm" id="createBoardBtn" data-bs-toggle="modal" data-bs-target="#createBoardModal">Новая доска</button>
     </div>
     <div id="boardsList" class="row g-3 mb-4"></div>
 
     <div class="row g-4">
         <div class="col-lg-6">
-            <h2 class="h5">Участники</h2>
-            <div id="membersList" class="mb-3"></div>
+            <div class="tm-card h-100">
+                <div class="card-header py-3">Участники</div>
+                <div class="card-body">
+                    <div id="membersList" class="mb-3"></div>
 
-            <h3 class="h6">Пригласить по email</h3>
-            <form id="inviteForm" class="row g-2 align-items-end mb-4">
-                <div class="col-md-5">
-                    <label class="form-label" for="inviteEmail">Email</label>
-                    <input type="email" class="form-control" id="inviteEmail" required>
-                </div>
-                <div class="col-md-3">
-                    <label class="form-label" for="inviteRole">Роль</label>
-                    <select class="form-select" id="inviteRole">
-                        <option value="EDITOR">EDITOR</option>
-                        <option value="VIEWER">VIEWER</option>
-                    </select>
-                </div>
-                <div class="col-md-4">
-                    <button type="submit" class="btn btn-outline-primary w-100" id="inviteBtn">Пригласить</button>
-                </div>
-            </form>
-            <div id="pendingInvites" class="mb-3"></div>
+                    <h3 class="h6">Пригласить по email</h3>
+                    <form id="inviteForm" class="row g-2 align-items-end mb-3">
+                        <div class="col-md-5">
+                            <label class="form-label" for="inviteEmail">Email</label>
+                            <input type="email" class="form-control" id="inviteEmail" required placeholder="colleague@example.com">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label" for="inviteRole">Роль</label>
+                            <select class="form-select" id="inviteRole">
+                                <option value="EDITOR">EDITOR</option>
+                                <option value="VIEWER">VIEWER</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <button type="submit" class="btn btn-outline-primary w-100" id="inviteBtn">Пригласить</button>
+                        </div>
+                    </form>
+                    <div id="pendingInvites" class="mb-3"></div>
 
-            <details class="mb-3">
-                <summary class="small text-muted">Добавить по userId (legacy)</summary>
-                <form id="addMemberForm" class="row g-2 align-items-end mt-2">
-                    <div class="col-md-4">
-                        <label class="form-label" for="memberUserId">ID пользователя</label>
-                        <input type="number" class="form-control" id="memberUserId" required>
-                    </div>
-                    <div class="col-md-3">
-                        <label class="form-label" for="memberRole">Роль</label>
-                        <select class="form-select" id="memberRole">
-                            <option value="EDITOR">EDITOR</option>
-                            <option value="VIEWER">VIEWER</option>
-                        </select>
-                    </div>
-                    <div class="col-md-3">
-                        <button type="submit" class="btn btn-outline-secondary" id="addMemberBtn">Добавить</button>
-                    </div>
-                </form>
-            </details>
+                    <details>
+                        <summary class="small text-muted">Добавить по userId (legacy)</summary>
+                        <form id="addMemberForm" class="row g-2 align-items-end mt-2">
+                            <div class="col-md-4">
+                                <label class="form-label" for="memberUserId">ID пользователя</label>
+                                <input type="number" class="form-control" id="memberUserId" required>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label" for="memberRole">Роль</label>
+                                <select class="form-select" id="memberRole">
+                                    <option value="EDITOR">EDITOR</option>
+                                    <option value="VIEWER">VIEWER</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3">
+                                <button type="submit" class="btn btn-outline-secondary" id="addMemberBtn">Добавить</button>
+                            </div>
+                        </form>
+                    </details>
+                </div>
+            </div>
         </div>
-
         <div class="col-lg-6">
-            <h2 class="h5">Метки</h2>
-            <div id="labelsList" class="mb-2"></div>
-            <form id="createLabelForm" class="row g-2 align-items-end mb-4">
-                <div class="col-md-5">
-                    <input type="text" class="form-control" id="labelName" placeholder="Название" required>
+            <div class="tm-card mb-4">
+                <div class="card-header py-3">Метки</div>
+                <div class="card-body">
+                    <div id="labelsList" class="mb-2"></div>
+                    <form id="createLabelForm" class="row g-2 align-items-end">
+                        <div class="col-md-5">
+                            <input type="text" class="form-control" id="labelName" placeholder="Название" required>
+                        </div>
+                        <div class="col-md-3">
+                            <input type="color" class="form-control form-control-color" id="labelColor" value="#0f766e">
+                        </div>
+                        <div class="col-md-4">
+                            <button type="submit" class="btn btn-outline-primary w-100" id="createLabelBtn">Добавить</button>
+                        </div>
+                    </form>
                 </div>
-                <div class="col-md-3">
-                    <input type="color" class="form-control form-control-color" id="labelColor" value="#0d6efd">
-                </div>
-                <div class="col-md-4">
-                    <button type="submit" class="btn btn-outline-primary w-100" id="createLabelBtn">Добавить метку</button>
-                </div>
-            </form>
+            </div>
 
-            <h2 class="h5">Спринты</h2>
-            <div id="sprintsList" class="mb-2"></div>
-            <form id="createSprintForm" class="row g-2 align-items-end mb-4">
-                <div class="col-md-5">
-                    <input type="text" class="form-control" id="sprintName" placeholder="Название спринта" required>
+            <div class="tm-card mb-4">
+                <div class="card-header py-3">Спринты</div>
+                <div class="card-body">
+                    <div id="sprintsList" class="mb-2"></div>
+                    <form id="createSprintForm" class="row g-2 align-items-end">
+                        <div class="col-md-5">
+                            <input type="text" class="form-control" id="sprintName" placeholder="Название спринта" required>
+                        </div>
+                        <div class="col-md-3">
+                            <input type="date" class="form-control" id="sprintStart">
+                        </div>
+                        <div class="col-md-4">
+                            <button type="submit" class="btn btn-outline-primary w-100" id="createSprintBtn">Создать</button>
+                        </div>
+                    </form>
                 </div>
-                <div class="col-md-3">
-                    <input type="date" class="form-control" id="sprintStart">
-                </div>
-                <div class="col-md-4">
-                    <button type="submit" class="btn btn-outline-primary w-100" id="createSprintBtn">Создать спринт</button>
-                </div>
-            </form>
+            </div>
 
-            <h2 class="h5">Активность</h2>
-            <div id="activityList" class="small"></div>
+            <div class="tm-card">
+                <div class="card-header py-3">Активность</div>
+                <div class="card-body">
+                    <div id="activityList" class="small"></div>
+                </div>
+            </div>
         </div>
     </div>
 </div>
@@ -184,19 +208,26 @@
             const canWrite = currentRole === 'OWNER' || currentRole === 'EDITOR';
             const isOwner = currentRole === 'OWNER';
             document.getElementById('projectHeader').innerHTML = `
-                <h1 class="h3">${escapeHtml(project.name)}</h1>
-                <p class="text-muted">${escapeHtml(project.description || '')}</p>
-                <span class="badge text-bg-primary">${project.currentUserRole}</span>
-                <span class="badge ${project.strictBusinessRules ? 'text-bg-danger' : 'text-bg-success'}">
-                    ${project.strictBusinessRules ? 'STRICT' : 'LEGACY'}
-                </span>
-                ${project.capacityLimitHours != null ? `<span class="badge text-bg-info">capacity ${project.capacityLimitHours}h</span>` : ''}
-                ${project.requireApprovalForDone ? '<span class="badge text-bg-warning">approval</span>' : ''}
-                ${project.priorityQueueRules ? '<span class="badge text-bg-warning">priority-queue</span>' : ''}
-                <span class="text-muted small ms-2">владелец: ${escapeHtml(project.ownerName || '')}</span>
-                ${project.organizationId ? `<span class="badge text-bg-dark ms-1">org #${project.organizationId}</span>` : ''}
-                ${isOwner ? `<button class="btn btn-sm btn-outline-secondary ms-2" type="button" onclick="patchSettings()">Настройки+</button>` : ''}
-                <a class="btn btn-sm btn-outline-secondary ms-1" href="/api/v1/projects/${projectId}/time-report?format=csv" target="_blank">Time CSV</a>
+                <div>
+                    <div class="eyebrow">Проект</div>
+                    <h1 class="h3 mb-1">${escapeHtml(project.name)}</h1>
+                    <p class="text-muted mb-2">${escapeHtml(project.description || 'Без описания')}</p>
+                    <div class="d-flex flex-wrap gap-1 align-items-center">
+                        <span class="badge text-bg-primary">${project.currentUserRole}</span>
+                        <span class="badge ${project.strictBusinessRules ? 'text-bg-danger' : 'text-bg-success'}">
+                            ${project.strictBusinessRules ? 'STRICT' : 'LEGACY'}
+                        </span>
+                        ${project.capacityLimitHours != null ? `<span class="badge text-bg-info">capacity ${project.capacityLimitHours}h</span>` : ''}
+                        ${project.requireApprovalForDone ? '<span class="badge text-bg-warning">approval</span>' : ''}
+                        ${project.priorityQueueRules ? '<span class="badge text-bg-warning">priority-queue</span>' : ''}
+                        ${project.organizationId ? `<span class="badge text-bg-dark">org #${project.organizationId}</span>` : ''}
+                        <span class="text-muted small">владелец: ${escapeHtml(project.ownerName || '')}</span>
+                    </div>
+                </div>
+                <div class="d-flex flex-wrap gap-2">
+                    ${isOwner ? `<button class="btn btn-sm btn-outline-secondary" type="button" onclick="patchSettings()">Настройки+</button>` : ''}
+                    <a class="btn btn-sm btn-outline-secondary" href="/api/v1/projects/${projectId}/time-report?format=csv" target="_blank">Time CSV</a>
+                </div>
             `;
 
             window.projectOrganizationId = project.organizationId || null;
@@ -240,11 +271,13 @@
         }
         container.innerHTML = boards.map(b => `
             <div class="col-md-6 col-lg-4">
-                <div class="card shadow-sm">
+                <div class="tm-card project-tile h-100">
                     <div class="card-body">
                         <h5 class="card-title">${escapeHtml(b.name)}</h5>
                         <span class="badge text-bg-secondary mb-2">${escapeHtml(b.accessMode || 'OPEN')}</span>
                         ${b.teamIds && b.teamIds.length ? `<div class="small text-muted mb-2">teams: ${b.teamIds.join(', ')}</div>` : ''}
+                    </div>
+                    <div class="card-footer pt-0 pb-3 px-3 border-0">
                         <a href="/boards/${b.id}" class="btn btn-sm btn-outline-primary">Открыть доску</a>
                     </div>
                 </div>
